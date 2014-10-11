@@ -23,21 +23,60 @@ _______________________________________________________________________________
  */
 
 #include "conway.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
 
+static char *help_strings[] = {
+ "usage: conway [OPTIONS ...]\n",
+ "where OPTIONS may include:",
+ " -N n             number of samples to generate",
+ " -h               print this usage summary",
+ "The standard output is one column.",
+NULL
+};
 
-void conway(int N){
+static void help()
+{
+    int i;
+
+    fprintf(stderr, help_strings[0]);
+    for (i = 1; help_strings[i] != NULL; i++)
+    	fprintf(stderr, "%s\n", help_strings[i]);
+    exit(-1);
+}
+
+void conway(int argc,char* argv[]){
+
+	int N;
+	char ch;
+	while ((ch = getopt(argc,argv,"hN:"))!=EOF)
+		switch(ch){
+		case 'N':
+			N=atoi(optarg);
+			break;
+		case 'h':
+			help();
+			break;
+		default:
+			fprintf(stderr,"Unknown option for conway: '%s'\n",optarg);
+			help();
+		}
+
+	argc-= optind;
+	argv += optind;
 
 	double output;
 	int a[N];
-	int n=0;
+	long int n=0;
 	for(;n<N;n++){
 		if(n<3){
 			a[n]=1;
 			output=1;
 		}else{
 			a[n]=a[a[n-1]]+ a[n-a[n-1]];
-			output=(double) a[n] - ((double)n)/2;
+			output= (double) a[n] - ((double)n/2.0);
 		}
-		printf("%f\n",output);
+		printf("%.6f\n",output);
 	}
 }

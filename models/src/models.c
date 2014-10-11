@@ -28,22 +28,20 @@ _______________________________________________________________________________
 #include "conway.h"
 
 /* Global variables. */
-char *pname="models";	/* this program's name (for use in error messages) */
-
 static char *help_strings[] = {
- "usage: %s [OPTIONS ...]\n",
+ "usage: models [OPTIONS ...]\n",
  "where OPTIONS may include:",
- " -d name          name of model to run",
+ " -n name          name of model to run",
  " -h               print this usage summary",
  "The standard output is one column.",
 NULL
 };
 
-void help()
+static void help()
 {
     int i;
 
-    (void)fprintf(stderr, help_strings[0], pname);
+    (void)fprintf(stderr, help_strings[0]);
     for (i = 1; help_strings[i] != NULL; i++)
     	fprintf(stderr, "%s\n", help_strings[i]);
     exit(-1);
@@ -52,25 +50,24 @@ void help()
 
 int main(int argc,char* argv[]) {
 
-	int N=100;
 	char ch;
-
-	while ((ch = getopt(argc,argv,"hN:"))!=EOF)
+	char *name;
+	int flag=1;
+	while (flag && (ch = getopt(argc,argv,"hn:"))!=EOF )
 		switch(ch){
-		case 'N':
-			N=atoi(optarg);
+		case 'n':
+			name=optarg;
+			flag=0;
 			break;
 		case 'h':
 			help();
 			break;
 		default:
 			fprintf(stderr,"Unknown option: '%s'\n",optarg);
-			return 1;
+			help();
+			break;
 		}
 
-	argc-= optind;
-	argv += optind;
-
-	conway(N);
+	conway(argc,argv);
 	return EXIT_SUCCESS;
 }
