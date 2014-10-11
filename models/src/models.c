@@ -47,6 +47,7 @@ static void help()
     exit(-1);
 }
 
+enum model_type {CONWAY, LOGISTIC};
 
 int main(int argc,char* argv[]) {
 
@@ -68,6 +69,20 @@ int main(int argc,char* argv[]) {
 			break;
 		}
 
-	conway(argc,argv);
+	//TODO: Simplify by using function pointers instead
+	/*
+	switch(name){
+		case 'conway':
+			conway(argc,argv);
+			break;
+		case 'logistic':
+			logistic(argc,argv);
+			break;
+		default:
+			fprintf(stderr,"Unknown option: '%s'\n",name);
+			help();
+			break;
+		}
+	 */
 	return EXIT_SUCCESS;
 }
