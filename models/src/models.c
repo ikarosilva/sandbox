@@ -1,8 +1,8 @@
-/* file: tes.c	 Ikaro Silva	Oct 10, 2014
+/* file: models.c	 Ikaro Silva	Oct 10, 2014
 		  Last revised:       -
 
 -------------------------------------------------------------------------------
-tes: TODO:Description
+models: Main entry point for generating 1-D signals from specific process models.
 Copyright (C) 2014 Ikaro Silva
 
 This program is free software; you can redistribute it and/or modify it under
