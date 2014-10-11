@@ -20,44 +20,48 @@ Place - Suite 330, Boston, MA 02111-1307, USA.
 
 You may contact the author by e-mail (ikaro@mit.edu).
 _______________________________________________________________________________
-*/
+ */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include "conway.h"
+#include "logistic.h"
 
 /* Global variables. */
 static char *help_strings[] = {
- "usage: models [OPTIONS ...]\n",
- "where OPTIONS may include:",
- " -n name          name of model to run",
- " -h               print this usage summary",
- "The standard output is one column.",
-NULL
+		"usage: models [OPTIONS ...]\n",
+		"where OPTIONS may include:",
+		" -f int           Number of model to run",
+		" -h               print this usage summary",
+		"The standard output is one column.",
+		NULL
 };
 
 static void help()
 {
-    int i;
+	int i;
 
-    (void)fprintf(stderr, help_strings[0]);
-    for (i = 1; help_strings[i] != NULL; i++)
-    	fprintf(stderr, "%s\n", help_strings[i]);
-    exit(-1);
+	(void)fprintf(stderr, help_strings[0]);
+	for (i = 1; help_strings[i] != NULL; i++)
+		fprintf(stderr, "%s\n", help_strings[i]);
+	exit(-1);
 }
-
-enum model_type {CONWAY, LOGISTIC};
 
 int main(int argc,char* argv[]) {
 
 	char ch;
-	char *name;
+	int index=0;
 	int flag=1;
-	while (flag && (ch = getopt(argc,argv,"hn:"))!=EOF )
+
+	//Define array of pointers to functions that can be called
+	const int indMax=2;
+	void (*funcTable[2])(int, char*)={ conway, logistic};
+
+	while (flag && (ch = getopt(argc,argv,"hf:"))!=EOF )
 		switch(ch){
-		case 'n':
-			name=optarg;
+		case 'f':
+			index=atoi(optarg);
 			flag=0;
 			break;
 		case 'h':
@@ -69,20 +73,11 @@ int main(int argc,char* argv[]) {
 			break;
 		}
 
-	//TODO: Simplify by using function pointers instead
-	/*
-	switch(name){
-		case 'conway':
-			conway(argc,argv);
-			break;
-		case 'logistic':
-			logistic(argc,argv);
-			break;
-		default:
-			fprintf(stderr,"Unknown option: '%s'\n",name);
-			help();
-			break;
-		}
-	 */
+	if(index> (indMax-1) ){
+		fprintf(stderr,"Unknown option for f: '%s'\n",index);
+		help();
+	}else {
+		funcTable[index](argc,argv);
+	}
 	return EXIT_SUCCESS;
 }
