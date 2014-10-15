@@ -32,7 +32,9 @@ _______________________________________________________________________________
 static char *help_strings[] = {
 		"usage: models [OPTIONS ...]\n",
 		"where OPTIONS may include:",
-		" -f int           Number of model to run",
+		" -f int           Number of model to run. Options are:",
+		"                  0 - Conway fractal time series",
+		"                  1 - Logistic model            ",
 		" -h               print this usage summary",
 		"The standard output is one column.",
 		NULL
@@ -55,6 +57,7 @@ int main(int argc,char* argv[]) {
 	int flag=1;
 
 	//Define array of pointers to functions that can be called
+	//This should map to the "-f int" parameter of the executable
 	const int indMax=2;
 	void (*funcTable[2])(int, char*)={ conway, logistic};
 
