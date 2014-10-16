@@ -95,7 +95,7 @@ int main(int argc,char* argv[]) {
 		countMe++;
 	}
 
-	errN=(lastPoint-timeLag)*countMe;
+	errN=countMe;
 	if(debugFlag){
 		fprintf(stderr,"errN=(lastPoint-timeLag)*countMe=(%d-%d)*%d= %d\n",
 				lastPoint,timeLag,countMe,errN);
