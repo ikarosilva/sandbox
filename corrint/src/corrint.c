@@ -53,9 +53,9 @@ int main(int argc,char* argv[]) {
 	char ch;
 	int stepSize=1;
 	int windowN=dim*stepSize;
-	const int countN=6;
 	register int i;
 	//th_arr should be sorted for speed efficiency
+	const int countN=6;
 	double th_arr[]={0.02, 0.01, 0.2, 0.3, 0.4,0.5};
 	unsigned int count[]={0, 0, 0, 0, 0,0};
 
@@ -81,24 +81,16 @@ int main(int argc,char* argv[]) {
 	}
 
 	//Find how many distance points we need to calculate and allocate memory accordingly
-	int errN;
-	int vectorSpan=dim*stepSize;
-	int lastPoint=N-vectorSpan;
-	int startStatePoint=(lastPoint-timeLag);
-	int countMe=0;
+	int k, errN=0,test=0;
 	//TODO: Find  a way to put this in close form.
-	// N + (N-stepSize) + ... + 1
-	for(i=startStatePoint;i>=0;i=i-stepSize){
-		if(i-vectorSpan<0){
-			break;
-		}
-		countMe++;
-	}
+	// First loop: T=(N-windowN+1)
+	// Second loop: K= ?
+	for(i=N-1;i>=windowN-1;i--,test++)
+		for(k=i-(windowN-1)-timeLag;k>=windowN-1;k--,errN++);
 
-	errN=countMe;
 	if(debugFlag){
-		fprintf(stderr,"errN=(lastPoint-timeLag)*countMe=(%d-%d)*%d= %d\n",
-				lastPoint,timeLag,countMe,errN);
+		fprintf(stderr,"errN=%d,windowN=%d,timeLag=%d,stepSize=%d\n",
+				errN,windowN,timeLag,stepSize);
 	}
 	double *err;
 	if ((err = malloc(errN * sizeof(double))) == NULL) {
@@ -159,15 +151,9 @@ void countNeighbors(double *th,unsigned int *count_arr, int countN, int Nerr, do
 
 	//This assumes that th is sorted in *increasing* size of threshold values
 	for(i=0;i<Nerr;i++){
-		if(debugFlag){
-			fprintf(stderr,"count \t\t err[%d]=%f\n",i,err[i]);
-		}
 		for(k=0;k<countN;k++){
 			if(err[i]<th[countN-1-k]){
 				count_arr[countN-1-k]++;
-				if(debugFlag){
-					fprintf(stderr,"count \t\t i=%d,count_arr[%d]=%d\n",i,(countN-1-k),count_arr[countN-1-k]);
-				}
 			}else{
 				//Lowest possible threshold reached, break from th_arr count
 				break;
