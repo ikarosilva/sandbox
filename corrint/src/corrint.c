@@ -4,7 +4,7 @@
  Author      : Ikaro Silva
  Version     :
  Copyright   : GPL
- Description : Hello World in C, Ansi-style
+ Description : Analysis of Time Series based on Correlation Integral
  ============================================================================
  */
 
