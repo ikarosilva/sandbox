@@ -16,7 +16,7 @@
 /* Function prototypes. */
 long input(void);
 void get_err(int windowN, int stepSize,int timeLag, double* err);
-void countNeighbors(double *th,unsigned int *count, int countN, int Nerr, double* err);
+void countNeighbors(double *th,double *count, int countN, int Nerr, double* err, int nFlag);
 /* End of Function prototypes. */
 
 
@@ -32,6 +32,7 @@ static char *help_strings[] = {
 		"where OPTIONS may include:",
 		" -h               print this usage summary",
 		" -D               Debug Flag, if true prints program detail",
+		" -N               Normalize Flag, if true normalize count",
 		"The standard output is one column.",
 		"The standard input is one column.",
 		NULL
@@ -52,17 +53,21 @@ int main(int argc,char* argv[]) {
 	int dim=2;
 	char ch;
 	int stepSize=1;
+	int normalizeFlag=0;
 	int windowN=dim*stepSize;
 	register int i;
 	//th_arr should be sorted for speed efficiency
 	const int countN=6;
 	double th_arr[]={0.02, 0.01, 0.2, 0.3, 0.4,0.5};
-	unsigned int count[]={0, 0, 0, 0, 0,0};
+	double count[]={0, 0, 0, 0, 0,0};
 
-	while ((ch = getopt(argc,argv,"hD"))!=EOF )
+	while ((ch = getopt(argc,argv,"hDN"))!=EOF )
 		switch(ch){
 		case 'D':
 			debugFlag=1;
+			break;
+		case 'N':
+			normalizeFlag=1;
 			break;
 		case 'h':
 			help();
@@ -102,11 +107,11 @@ int main(int argc,char* argv[]) {
 	get_err(windowN,stepSize,timeLag,err);
 
 	//Get neighborhood count
-	countNeighbors(th_arr,count,countN,errN,err);
+	countNeighbors(th_arr,count,countN,errN,err,normalizeFlag);
 
 	//Display results in column format
 	for(i=0;i<countN;i++){
-		fprintf(stdout,"%f \t %d\n",th_arr[i],count[i]);
+		fprintf(stdout,"%f \t %f\n",th_arr[i],count[i]);
 	}
 
 
@@ -130,7 +135,7 @@ void get_err(int windowN, int stepSize,int timeLag, double* err){
 			for(z=0;z<windowN;z+=stepSize){
 				tmpErr+=fabs(input_data[i-z]-input_data[k-z]);
 				if(debugFlag){
-					fprintf(stderr,"data[%d]-data[%d]\t",(i-z),(k-z),input_data[i-z],input_data[k-z],(input_data[i-z]-input_data[k-z]));
+					fprintf(stderr,"data[%d]-data[%d]\t",(i-z),(k-z));
 				}
 			}
 			if(debugFlag){
@@ -143,8 +148,8 @@ void get_err(int windowN, int stepSize,int timeLag, double* err){
 }
 
 //Get the number of states within a minimum threshold
-void countNeighbors(double *th,unsigned int *count_arr, int countN, int Nerr, double* err){
-	int i,k;
+void countNeighbors(double *th,double *count_arr, int countN, int Nerr, double* err,int nFlag){
+	register int i,k;
 	//Loop through the distance matrix and then go over the th_arr
 	//in decreasing order for each element that is below the threshold,
 	//incrementing to the count
@@ -159,6 +164,13 @@ void countNeighbors(double *th,unsigned int *count_arr, int countN, int Nerr, do
 				break;
 			}
 		}
+	}
+
+	//Normalize the count
+	if(nFlag==1){
+		double den = N*(N-1);
+		for(k=0;k<countN;k++)
+			count_arr[k]=count_arr[k]/den;
 	}
 
 }
