@@ -4,7 +4,7 @@
  Author      : Ikaro Silva
  Version     :
  Copyright   : GPL
- Description : Hello World in C, Ansi-style
+ Description : Analysis of Time Series based on Correlation Integral
  ============================================================================
  */
 
@@ -16,7 +16,7 @@
 /* Function prototypes. */
 long input(void);
 void get_err(int windowN, int stepSize,int timeLag, double* err);
-void countNeighbors(double *th,unsigned int *count, int countN, int Nerr, double* err);
+void countNeighbors(double *th,double *count, int countN, int Nerr, double* err, int nFlag);
 /* End of Function prototypes. */
 
 
@@ -31,10 +31,15 @@ static char *help_strings[] = {
 		"usage: corrint [OPTIONS ...]\n",
 		"where OPTIONS may include:",
 		" -h               print this usage summary",
+<<<<<<< HEAD
 		" -v               verbose mode            ",
 		" -d int           embedded dimension size ",
 		" -t int           time lag between states",
 		" -s int           time lag within state samples",
+=======
+		" -D               Debug Flag, if true prints program detail",
+		" -N               Normalize Flag, if true normalize count",
+>>>>>>> branch 'master' of https://github.com/ikarosilva/sandbox
 		"The standard output is one column.",
 		"The standard input is one column.",
 		NULL
@@ -55,16 +60,27 @@ int main(int argc,char* argv[]) {
 	int dim=2;
 	char ch;
 	int stepSize=1;
+<<<<<<< HEAD
+=======
+	int normalizeFlag=0;
+	int windowN=dim*stepSize;
+	register int i;
+>>>>>>> branch 'master' of https://github.com/ikarosilva/sandbox
 	//th_arr should be sorted for speed efficiency
 	const int countN=6;
 	double th_arr[]={0.02, 0.01, 0.2, 0.3, 0.4,0.5};
-	unsigned int count[]={0, 0, 0, 0, 0,0};
+	double count[]={0, 0, 0, 0, 0,0};
 
+<<<<<<< HEAD
 	while ((ch = getopt(argc,argv,"hvd:t:s:"))!=EOF )
+=======
+	while ((ch = getopt(argc,argv,"hDN"))!=EOF )
+>>>>>>> branch 'master' of https://github.com/ikarosilva/sandbox
 		switch(ch){
 		case 'v':
 			debugFlag=1;
 			break;
+<<<<<<< HEAD
 		case 'd':
 			dim=atoi(optarg);;
 			break;
@@ -73,6 +89,10 @@ int main(int argc,char* argv[]) {
 			break;
 		case 's':
 			stepSize=atoi(optarg);
+=======
+		case 'N':
+			normalizeFlag=1;
+>>>>>>> branch 'master' of https://github.com/ikarosilva/sandbox
 			break;
 		case 'h':
 			help();
@@ -115,11 +135,11 @@ int main(int argc,char* argv[]) {
 	get_err(windowN,stepSize,timeLag,err);
 
 	//Get neighborhood count
-	countNeighbors(th_arr,count,countN,errN,err);
+	countNeighbors(th_arr,count,countN,errN,err,normalizeFlag);
 
 	//Display results in column format
 	for(i=0;i<countN;i++){
-		fprintf(stdout,"%f \t %d\n",th_arr[i],count[i]);
+		fprintf(stdout,"%f \t %f\n",th_arr[i],count[i]);
 	}
 
 
@@ -153,8 +173,8 @@ void get_err(int windowN, int stepSize,int timeLag, double* err){
 }
 
 //Get the number of states within a minimum threshold
-void countNeighbors(double *th,unsigned int *count_arr, int countN, int Nerr, double* err){
-	int i,k;
+void countNeighbors(double *th,double *count_arr, int countN, int Nerr, double* err,int nFlag){
+	register int i,k;
 	//Loop through the distance matrix and then go over the th_arr
 	//in decreasing order for each element that is below the threshold,
 	//incrementing to the count
@@ -169,6 +189,13 @@ void countNeighbors(double *th,unsigned int *count_arr, int countN, int Nerr, do
 				break;
 			}
 		}
+	}
+
+	//Normalize the count
+	if(nFlag==1){
+		double den = N*(N-1);
+		for(k=0;k<countN;k++)
+			count_arr[k]=count_arr[k]/den;
 	}
 
 }
