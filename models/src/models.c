@@ -27,7 +27,7 @@ _______________________________________________________________________________
 #include <unistd.h>
 #include "conway.h"
 #include "logistic.h"
-#include "neuralimpulse.h"
+#include "hh.h"
 
 /* Global variables. */
 static char *help_strings[] = {
@@ -36,7 +36,7 @@ static char *help_strings[] = {
 		" -f int           Number of model to run. Options are:",
 		"                  0 - Conway fractal time series",
 		"                  1 - Logistic model            ",
-		"                  2 - Neural Impulse model            ",
+		"                  2 - Hudgkin-Huxley Neural Excitation model",
 		" -h               print this usage summary",
 		"The standard output is one column.",
 		NULL
@@ -61,7 +61,7 @@ int main(int argc,char* argv[]) {
 	//Define array of pointers to functions that can be called
 	//This should map to the "-f int" parameter of the executable
 	const int indMax=3;
-	void (*funcTable[3])(int, char*)={ conway, logistic, neuralimpulse};
+	void (*funcTable[3])(int, char*)={ conway, logistic, hh};
 
 	while (flag && (ch = getopt(argc,argv,"hf:"))!=EOF )
 		switch(ch){
