@@ -31,8 +31,15 @@ static char *help_strings[] = {
 		"usage: corrint [OPTIONS ...]\n",
 		"where OPTIONS may include:",
 		" -h               print this usage summary",
+<<<<<<< HEAD
+		" -v               verbose mode            ",
+		" -d int           embedded dimension size ",
+		" -t int           time lag between states",
+		" -s int           time lag within state samples",
+=======
 		" -D               Debug Flag, if true prints program detail",
 		" -N               Normalize Flag, if true normalize count",
+>>>>>>> branch 'master' of https://github.com/ikarosilva/sandbox
 		"The standard output is one column.",
 		"The standard input is one column.",
 		NULL
@@ -53,21 +60,39 @@ int main(int argc,char* argv[]) {
 	int dim=2;
 	char ch;
 	int stepSize=1;
+<<<<<<< HEAD
+=======
 	int normalizeFlag=0;
 	int windowN=dim*stepSize;
 	register int i;
+>>>>>>> branch 'master' of https://github.com/ikarosilva/sandbox
 	//th_arr should be sorted for speed efficiency
 	const int countN=6;
 	double th_arr[]={0.02, 0.01, 0.2, 0.3, 0.4,0.5};
 	double count[]={0, 0, 0, 0, 0,0};
 
+<<<<<<< HEAD
+	while ((ch = getopt(argc,argv,"hvd:t:s:"))!=EOF )
+=======
 	while ((ch = getopt(argc,argv,"hDN"))!=EOF )
+>>>>>>> branch 'master' of https://github.com/ikarosilva/sandbox
 		switch(ch){
-		case 'D':
+		case 'v':
 			debugFlag=1;
 			break;
+<<<<<<< HEAD
+		case 'd':
+			dim=atoi(optarg);;
+			break;
+		case 't':
+			timeLag=atoi(optarg);
+			break;
+		case 's':
+			stepSize=atoi(optarg);
+=======
 		case 'N':
 			normalizeFlag=1;
+>>>>>>> branch 'master' of https://github.com/ikarosilva/sandbox
 			break;
 		case 'h':
 			help();
@@ -77,6 +102,9 @@ int main(int argc,char* argv[]) {
 			help();
 			break;
 		}
+
+	int windowN=dim*stepSize;
+	register int i;
 
 	//Load data into input_data and get the number of samples read
 	N=input();
@@ -94,7 +122,7 @@ int main(int argc,char* argv[]) {
 		for(k=i-(windowN-1)-timeLag;k>=windowN-1;k--,errN++);
 
 	if(debugFlag){
-		fprintf(stderr,"errN=%d,windowN=%d,timeLag=%d,stepSize=%d\n",
+		fprintf(stderr,"pairs of states=%d,windowN=%d,timeLag=%d,stepSize=%d\n",
 				errN,windowN,timeLag,stepSize);
 	}
 	double *err;
@@ -126,9 +154,6 @@ void get_err(int windowN, int stepSize,int timeLag, double* err){
 	double tmpErr;
 	//Loop through the data array starting from the end, going to the beginning.
 	//For each loop a state vector of size dim and offset timeLag is generated
-	if(debugFlag){
-		fprintf(stderr,"windowN=%d, stepSize=%d,timeLag=%d\n",windowN,stepSize,timeLag);
-	}
 	for(i=N-1;i>=windowN-1;i--){
 		for(k=i-(windowN-1)-timeLag;k>=windowN-1;k--){
 			tmpErr=0;
