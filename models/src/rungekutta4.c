@@ -26,7 +26,7 @@ _______________________________________________________________________________
 double* integrate(double t0, long N, long M, double h, double* x0, double* (*dx)(double t, double* x) ){
 
 	double *y=malloc(sizeof(double)*N*M);
-	int n,m ;
+	volatile int n,m ;
 	if(y== NULL){
 		fprintf(stderr,"Insufficient memory");
 		exit(1);
@@ -44,7 +44,6 @@ double* integrate(double t0, long N, long M, double h, double* x0, double* (*dx)
 			k2[m]=h*dx(t+ h/2.0,y[n-1][m]+ k1/2.0);
 			k3[m]=h*dx(t+ h/2.0,y[n-1][m]+ k2/2.0);
 			k4[m]=h*dx(t+ h,y[n-1][m]+ k3);
-
 			y[n][m]=y[n-1][m] + (k1[m] + 2*k2[m] + 2*k3[m] + k4[m])/6.0;
 		}
 		t=t+h;
