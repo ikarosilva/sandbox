@@ -64,32 +64,32 @@ double I=10;
 double CM=1;
 
 
-double alphaN(double v){
+inline double alphaN(double v){
 	return 0.01*(10 -v )/(exp( (10-v)/10.0 ) - 1.0);
 }
 
-double alphaM(double v){
+inline double alphaM(double v){
 	return 0.1*(25 -v )/(exp( (25-v)/10.0 ) - 1.0);
 }
 
-double alphaH(double v){
+inline double alphaH(double v){
 	return 0.07*exp(-v/20.0);
 }
 
-double betaN(double v){
+inline double betaN(double v){
 	return 0.125*exp(-v/80.0);
 }
 
-double betaM(double v){
+inline double betaM(double v){
 	return 4.0*exp(-v/18.0);
 }
 
-double betaH(double v){
+inline double betaH(double v){
 	return 1.0/(exp( (30-v)/10.0 ) + 1.0);
 }
 
 
-void dx(double v, double n, double m,double h, double* dV){
+inline void dx(double v, double n, double m,double h, double* dV){
 	dV[0]=( -GK*n*n*n*n*(v-VK) - GNA*m*m*m*h*(v-VNA) - GL*(v-VL) + I ) /CM;
 	dV[1]=alphaN(v)*(1-n)-betaN(v);
 	dV[2]=alphaM(v)*(1-m)-betaM(v);
