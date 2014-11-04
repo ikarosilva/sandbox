@@ -19,7 +19,7 @@ double *input_data;	/* input data buffer; allocated and filled by input() */
 long N=0;
 
 static char *help_strings[] = {
-		"usage: conway [OPTIONS ...]\n",
+		"usage: backward [OPTIONS ...]\n",
 		"where OPTIONS may include:",
 		" -p n          Nth derivative ( 1 <= n <= 4 )",
 		" -s d          sampling interval time of input series",
@@ -109,7 +109,7 @@ long input()
 			double *s;
 			maxdat += 50000;	/* allow the input buffer to grow (the increment is arbitrary) */
 			if ((s = realloc(input_data, maxdat * sizeof(double))) == NULL) {
-				fprintf(stderr,"corrint: insufficient memory, exiting program!");
+				fprintf(stderr,"backward: insufficient memory, exiting program!");
 				exit(-1);
 			}
 			input_data = s;
@@ -118,7 +118,7 @@ long input()
 		npts++;
 	}
 	if (npts < 1){
-		printf(stderr,"%corrint: Error, no data read!");
+		printf(stderr,"%backward: Error, no data read!");
 		exit(-1);
 	}
 	return (npts);
