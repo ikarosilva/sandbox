@@ -1,3 +1,4 @@
+
 /* file: logistic.c	 Ikaro Silva	Oct 10, 2014
 		  Last revised:       -
 
@@ -79,8 +80,3 @@ void logistic(int argc,char* argv[]){
 		printf("%.6f\n",x);;
 	}
 }
-
-
-
-
-

@@ -10,4 +10,4 @@
 
 void central(int argc,char* argv[]);
 
-#endif CENTRAL_H_
+#endif /* CENTRAL_H_*/

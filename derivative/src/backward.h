@@ -10,4 +10,4 @@
 
 void backward(int argc,char* argv[]);
 
-#endif BACKWARD_H_
+#endif /*BACKWARD_H_*/

@@ -5,43 +5,29 @@
  *      Author: Ikaro Silva
  */
 
-#include "backward.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-
-/* Function prototypes. */
-long input(void);
-/* End of Function prototypes. */
-
-/* Global variables. */
-double *input_data;	/* input data buffer; allocated and filled by input() */
-long N=0;
-
-static char *help_strings[] = {
-		"usage: backward [OPTIONS ...]\n",
-		"where OPTIONS may include:",
-		" -p n          Nth derivative ( 1 <= n <= 4 )",
-		" -s d          sampling interval time of input series",
-		" -h            print this usage summary",
-		"The standard output is one column.",
-		NULL
-};
-
-static void help()
-{
-	int i;
-
-	fprintf(stderr, help_strings[0]);
-	for (i = 1; help_strings[i] != NULL; i++)
-		fprintf(stderr, "%s\n", help_strings[i]);
-	exit(-1);
-}
+#include "derivative.h"
+#include "backward.h"
 
 void backward(int argc,char* argv[]){
 
+	static char *help_strings[] = {
+			"usage: backward [OPTIONS ...]\n",
+			"where OPTIONS may include:",
+			" -p n          Nth derivative ( 1 <= n <= 4 )",
+			" -s d          sampling interval time of input series",
+			" -h            print this usage summary",
+			"The standard output is one column.",
+			NULL
+	};
+
 	int p=1, Ts;
 	char ch;
+	double *input_data;	/* input data buffer; allocated and filled by input() */
+	long N=0;
+
 	while ((ch = getopt(argc,argv,"hp:s:"))!=EOF)
 		switch(ch){
 		case 'p':
@@ -51,17 +37,17 @@ void backward(int argc,char* argv[]){
 			Ts= atof(optarg);
 			break;
 		case 'h':
-			help();
+			help(help_strings);
 			break;
 		default:
 			fprintf(stderr,"Unknown option for central: '%s'\n",optarg);
-			help();
+			help(help_strings);
 		}
 
 	argc-= optind;
 	argv += optind;
 	/*Load data into input_data and get the number of samples read*/
-	N=input();
+	N=input(input_data);
 
 	/*Estimate Derivatives using Backward Difference Method from
 	 *  "Numerical Methods in Biomedical Engineering", Dunn et all
@@ -97,29 +83,4 @@ void backward(int argc,char* argv[]){
 	}else{
 		fprintf(stderr,"Unknown derivative order: %f",p);
 	}
-}
-
-
-long input()
-{
-	long maxdat = 0L, npts = 0L;
-	double y;
-	while (scanf("%lf", &y) == 1) {
-		if (npts >= maxdat) {
-			double *s;
-			maxdat += 50000;	/* allow the input buffer to grow (the increment is arbitrary) */
-			if ((s = realloc(input_data, maxdat * sizeof(double))) == NULL) {
-				fprintf(stderr,"backward: insufficient memory, exiting program!");
-				exit(-1);
-			}
-			input_data = s;
-		}
-		input_data[npts] = y;
-		npts++;
-	}
-	if (npts < 1){
-		printf(stderr,"%backward: Error, no data read!");
-		exit(-1);
-	}
-	return (npts);
 }

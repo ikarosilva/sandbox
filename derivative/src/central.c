@@ -5,43 +5,31 @@
  *      Author: Ikaro Silva
  */
 
-#include "central.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-
-/* Function prototypes. */
-long input(void);
-/* End of Function prototypes. */
-
-/* Global variables. */
-double *input_data;	/* input data buffer; allocated and filled by input() */
-long N=0;
-
-static char *help_strings[] = {
-		"usage: conway [OPTIONS ...]\n",
-		"where OPTIONS may include:",
-		" -p n          Nth derivative ( 1 <= n <= 4 )",
-		" -s d          sampling interval time of input series",
-		" -h            print this usage summary",
-		"The standard output is one column.",
-		NULL
-};
-
-static void help()
-{
-	int i;
-
-	fprintf(stderr, help_strings[0]);
-	for (i = 1; help_strings[i] != NULL; i++)
-		fprintf(stderr, "%s\n", help_strings[i]);
-	exit(-1);
-}
+#include "derivative.h"
+#include "central.h"
 
 void central(int argc,char* argv[]){
 
-	int p=1, Ts;
+	static char *help_strings[] = {
+			"usage: central [OPTIONS ...]\n",
+			"where OPTIONS may include:",
+			" -p n          Nth derivative ( 1 <= n <= 4 )",
+			" -s d          sampling interval time of input series",
+			" -h            print this usage summary",
+			"The standard output is one column.",
+			NULL
+	};
+
+	int p=1;
+	double Ts;
 	char ch;
+	double *input_data;	/* input data buffer; allocated and filled by input() */
+	long N=0;
+
 	while ((ch = getopt(argc,argv,"hp:s:"))!=EOF)
 		switch(ch){
 		case 'p':
@@ -51,17 +39,17 @@ void central(int argc,char* argv[]){
 			Ts= atof(optarg);
 			break;
 		case 'h':
-			help();
+			help(help_strings);
 			break;
 		default:
 			fprintf(stderr,"Unknown option for central: '%s'\n",optarg);
-			help();
+			help(help_strings);
 		}
 
 	argc-= optind;
 	argv += optind;
 	/*Load data into input_data and get the number of samples read*/
-	N=input();
+	N=input(input_data);
 
 	/*Estimate Derivatives using Central Difference Method from
 	 *  "Numerical Methods in Biomedical Engineering", Dunn et all
@@ -69,7 +57,8 @@ void central(int argc,char* argv[]){
 	 *	With error of order O(Ts)^4
 	 *  */
 
-	int n, dx, xdiff;
+	int n;
+	double dx, xdiff;
 	if(p==1){
 		xdiff=1/(12*Ts);
 		for(n=2;n<(N-2);n++){
@@ -91,35 +80,10 @@ void central(int argc,char* argv[]){
 	}else if(p==4){
 		xdiff=1/(6*Ts*Ts*Ts*Ts);
 		for(n=1;n<(N-1);n++){
-			dx= xdiff*(-input_data[n+3] + 12*input_data[n+2] - 39*input_data[n+1] + 56*input_datap[n] - 39*input_data[n-1] + 12*input_data[n-2] - input_data[n-3] );
+			dx= xdiff*(-input_data[n+3] + 12*input_data[n+2] - 39*input_data[n+1] + 56*input_data[n] - 39*input_data[n-1] + 12*input_data[n-2] - input_data[n-3] );
 			fprintf(stdout,"%f \t %f\n",n*Ts,dx);
 		}
 	}else{
-		fprintf(stderr,"Unknown derivative order: %f",p);
+		fprintf(stderr,"Unknown derivative order: %u",p);
 	}
-}
-
-
-long input()
-{
-	long maxdat = 0L, npts = 0L;
-	double y;
-	while (scanf("%lf", &y) == 1) {
-		if (npts >= maxdat) {
-			double *s;
-			maxdat += 50000;	/* allow the input buffer to grow (the increment is arbitrary) */
-			if ((s = realloc(input_data, maxdat * sizeof(double))) == NULL) {
-				fprintf(stderr,"corrint: insufficient memory, exiting program!");
-				exit(-1);
-			}
-			input_data = s;
-		}
-		input_data[npts] = y;
-		npts++;
-	}
-	if (npts < 1){
-		printf(stderr,"%corrint: Error, no data read!");
-		exit(-1);
-	}
-	return (npts);
 }
