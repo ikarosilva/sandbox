@@ -31,15 +31,12 @@ static char *help_strings[] = {
 		"usage: corrint [OPTIONS ...]\n",
 		"where OPTIONS may include:",
 		" -h               print this usage summary",
-<<<<<<< HEAD
 		" -v               verbose mode            ",
 		" -d int           embedded dimension size ",
 		" -t int           time lag between states",
 		" -s int           time lag within state samples",
-=======
 		" -D               Debug Flag, if true prints program detail",
 		" -N               Normalize Flag, if true normalize count",
->>>>>>> branch 'master' of https://github.com/ikarosilva/sandbox
 		"The standard output is one column.",
 		"The standard input is one column.",
 		NULL
@@ -60,27 +57,19 @@ int main(int argc,char* argv[]) {
 	int dim=2;
 	char ch;
 	int stepSize=1;
-<<<<<<< HEAD
-=======
 	int normalizeFlag=0;
 	int windowN=dim*stepSize;
 	register int i;
->>>>>>> branch 'master' of https://github.com/ikarosilva/sandbox
 	//th_arr should be sorted for speed efficiency
 	const int countN=6;
 	double th_arr[]={0.02, 0.01, 0.2, 0.3, 0.4,0.5};
 	double count[]={0, 0, 0, 0, 0,0};
 
-<<<<<<< HEAD
 	while ((ch = getopt(argc,argv,"hvd:t:s:"))!=EOF )
-=======
-	while ((ch = getopt(argc,argv,"hDN"))!=EOF )
->>>>>>> branch 'master' of https://github.com/ikarosilva/sandbox
 		switch(ch){
 		case 'v':
 			debugFlag=1;
 			break;
-<<<<<<< HEAD
 		case 'd':
 			dim=atoi(optarg);;
 			break;
@@ -89,10 +78,9 @@ int main(int argc,char* argv[]) {
 			break;
 		case 's':
 			stepSize=atoi(optarg);
-=======
+			break;
 		case 'N':
 			normalizeFlag=1;
->>>>>>> branch 'master' of https://github.com/ikarosilva/sandbox
 			break;
 		case 'h':
 			help();
@@ -102,9 +90,6 @@ int main(int argc,char* argv[]) {
 			help();
 			break;
 		}
-
-	int windowN=dim*stepSize;
-	register int i;
 
 	//Load data into input_data and get the number of samples read
 	N=input();
@@ -226,7 +211,7 @@ long input()
 		npts++;
 	}
 	if (npts < 1){
-		printf(stderr,"%corrint: Error, no data read!");
+		printf(stderr,"Error, no data read!");
 		exit(-1);
 	}
 	return (npts);
