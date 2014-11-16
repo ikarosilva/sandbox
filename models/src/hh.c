@@ -36,6 +36,7 @@ static char *help_strings[] = {
 		"usage: hh [OPTIONS ...]\n",
 		"where OPTIONS may include:",
 		" -N n             number of samples to generate",
+		" -s f             sampling interval (default 0.01)",
 		" -h               print this usage summary",
 		"The standard output is one column.",
 		NULL
@@ -50,18 +51,18 @@ static void help()
 }
 
 /*Define constants of the model,but allow them to be overwritten from command line*/
-double GK=36;
-double VK=-12;
-double V0=8;
+double GK=36.0;
+double VK=-12.0;
+double V0=8.0;
 double H0=0.5961;
-double GNA=120;
-double VNA=115;
+double GNA=120.0;
+double VNA=115.0;
 double N0=0.3177;
 double GL=0.3;
 double VL=10.6;
 double M0=0.05293;
-double I=10;
-double CM=1;
+double I=10.0;
+double CM=1.0;
 
 
 inline double alphaN(double v){
@@ -91,9 +92,9 @@ inline double betaH(double v){
 
 inline void dx(double v, double n, double m,double h, double* dV){
 	dV[0]=( -GK*n*n*n*n*(v-VK) - GNA*m*m*m*h*(v-VNA) - GL*(v-VL) + I ) /CM;
-	dV[1]=alphaN(v)*(1-n)-betaN(v);
-	dV[2]=alphaM(v)*(1-m)-betaM(v);
-	dV[3]=alphaH(v)*(1-h)-betaH(v);
+	dV[1]=alphaN(v)*(1-n)-betaN(v)*n;
+	dV[2]=alphaM(v)*(1-m)-betaM(v)*m;
+	dV[3]=alphaH(v)*(1-h)-betaH(v)*h;
 }
 
 
@@ -101,11 +102,14 @@ void hh(int argc,char* argv[]){
 
 	int N=10;
 	char ch;
-	double Ts=0.0005;
-	while ((ch = getopt(argc,argv,"hN:u:x:"))!=EOF)
+	double Ts=0.01;
+	while ((ch = getopt(argc,argv,"hN:s:"))!=EOF)
 		switch(ch){
 		case 'N':
 			N=atoi(optarg);
+			break;
+		case 's':
+			Ts=atof(optarg);
 			break;
 		case 'h':
 			help();
@@ -118,7 +122,6 @@ void hh(int argc,char* argv[]){
 	argc-= optind;
 	argv += optind;
 
-	double output;
 	double v=V0,n=N0,m=M0,h=H0;
 	double dV[4]={0,0,0,0};
 	long int t=0;
