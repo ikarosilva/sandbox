@@ -17,6 +17,7 @@
 long input(void);
 void get_err(int windowN, int stepSize,int timeLag, double* err);
 void countNeighbors(double *th,double *count, int countN, int Nerr, double* err, int nFlag);
+void xcorr();
 /* End of Function prototypes. */
 
 
@@ -24,6 +25,8 @@ void countNeighbors(double *th,double *count, int countN, int Nerr, double* err,
 double *input_data;	/* input data buffer; allocated and filled by input() */
 long N=0;
 int debugFlag=0;
+long maxLag=0;
+double *Rxx; /*autocorrelation of the input data, with length maxLag */
 /* End of Global variables. */
 
 
@@ -32,6 +35,7 @@ static char *help_strings[] = {
 		"where OPTIONS may include:",
 		" -h               print this usage summary",
 		" -v               verbose mode            ",
+		" -R               calculates autocorrelation only and exits",
 		" -d int           embedded dimension size ",
 		" -t int           time lag between states",
 		" -s int           time lag within state samples",
@@ -57,7 +61,7 @@ int main(int argc,char* argv[]) {
 	int dim=2;
 	char ch;
 	int stepSize=1;
-	int normalizeFlag=0;
+	int normalizeFlag=0, corrFlag=0;
 	int windowN=dim*stepSize;
 	register int i;
 	//th_arr should be sorted for speed efficiency
@@ -65,7 +69,7 @@ int main(int argc,char* argv[]) {
 	double th_arr[]={0.02, 0.01, 0.2, 0.3, 0.4,0.5};
 	double count[]={0, 0, 0, 0, 0,0};
 
-	while ((ch = getopt(argc,argv,"hvd:t:s:"))!=EOF )
+	while ((ch = getopt(argc,argv,"hvd:t:s:R"))!=EOF )
 		switch(ch){
 		case 'v':
 			debugFlag=1;
@@ -82,6 +86,10 @@ int main(int argc,char* argv[]) {
 		case 'N':
 			normalizeFlag=1;
 			break;
+		case 'R':
+			/*Calculate autocorrelation only and exits */
+			corrFlag=1;
+			break;
 		case 'h':
 			help();
 			break;
@@ -93,6 +101,15 @@ int main(int argc,char* argv[]) {
 
 	//Load data into input_data and get the number of samples read
 	N=input();
+
+
+	if(corrFlag){
+		/*Calculate autocorrelation and exit */
+		xcorr();
+		for(i=0;i<maxLag;i++)
+			fprintf(stdout,"%f\n",Rxx[i]);
+		exit(0);
+	}
 	if(debugFlag){
 		for(i=0;i<N;i++)
 			fprintf(stderr,"data[%d]=%f\n",i,input_data[i]);
@@ -183,6 +200,32 @@ void countNeighbors(double *th,double *count_arr, int countN, int Nerr, double* 
 			count_arr[k]=count_arr[k]/den;
 	}
 
+}
+
+
+/* Estimate autocorrelation */
+void xcorr(){
+	volatile long lag, n;
+	double R, R0;
+	maxLag=N/2;
+	Rxx=malloc(maxLag * sizeof(double));
+
+	/*Subtract mean from the time series */
+	double dc=0;
+	for(n=0;n<N;n++)
+		dc+=input_data[n];
+	dc=(double) dc/N;
+
+	for(n=0;n<N;n++)
+	    input_data[n]=input_data[n]-dc;
+
+	for(lag=0;lag<maxLag;lag++){
+		for(n=0,R=0,R0=0;n<N-maxLag;n++){
+			R+= input_data[n+lag]*input_data[n];
+			R0+=input_data[n]*input_data[n];
+		}
+		Rxx[lag]=R/R0;
+	}
 }
 
 
