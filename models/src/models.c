@@ -30,6 +30,7 @@ _______________________________________________________________________________
 #include "hh.h"
 #include "one.h"
 #include "three.h"
+#include "lorenz.h"
 
 /* Global variables. */
 static char *help_strings[] = {
@@ -41,6 +42,7 @@ static char *help_strings[] = {
 		"                  2 - Hudgkin-Huxley Neural Excitation model",
 		"                  3 - Linear AR order 1 with state and measurement noise",
 		"                  4 - Linear coupled model with state and measurement noise",
+		"                  5 - Lorenz System ",
 		" -h               print this usage summary",
 		"The standard output is one column.",
 		NULL
@@ -64,8 +66,8 @@ int main(int argc,char* argv[]) {
 
 	//Define array of pointers to functions that can be called
 	//This should map to the "-f int" parameter of the executable
-	const int indMax=5;
-	void (*funcTable[5])(int, char*)={ conway, logistic, hh, one, three};
+	const int indMax=6;
+	void (*funcTable[6])(int, char*)={ conway, logistic, hh, one, three, lorenz};
 
 	while (flag && (ch = getopt(argc,argv,"hf:"))!=EOF )
 		switch(ch){
