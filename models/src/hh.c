@@ -111,7 +111,7 @@ void hh(int argc,char* argv[]){
 			help();
 			break;
 		default:
-			fprintf(stderr,"Unknown option for logistic: '%s'\n",optarg);
+			fprintf(stderr,"Unknown option for hh: '%s'\n",optarg);
 			help();
 		}
 

@@ -23,24 +23,25 @@ _______________________________________________________________________________
 #include <stdio.h>
 #include <stdlib.h>
 
-double* integrate(double t0, long N, long M, double h, double* x0, double* (*dx)(double t, double* x) ){
-
-	double *y=malloc(sizeof(double)*N*M);
-	volatile int n,m ;
+double* integrate(double t0, int N, long M, double h, double* x0, double* (*dx)(double t, double *x) )
+{
+	double* y=malloc(N*M*sizeof(double));
+	int n,m ;
 	if(y== NULL){
 		fprintf(stderr,"Insufficient memory");
 		exit(1);
 	}
 
 	for(m=0;n<M;n++){
-		y[0][m]=x0[m];
+		y[0]=x0[m];
 	}
 
 	double k1[M], k2[M], k3[M], k4[M], t=t0;
 
+	/*
 	for(n=1;n<N;n++){
 		for(m=0;m<M;m++){
-			k1[m]=h*dx(t,y[n-1][m]);
+			k1[m]=h* dx(t,y[n-1][m]);
 			k2[m]=h*dx(t+ h/2.0,y[n-1][m]+ k1/2.0);
 			k3[m]=h*dx(t+ h/2.0,y[n-1][m]+ k2/2.0);
 			k4[m]=h*dx(t+ h,y[n-1][m]+ k3);
@@ -48,7 +49,7 @@ double* integrate(double t0, long N, long M, double h, double* x0, double* (*dx)
 		}
 		t=t+h;
 	}
-
+*/
 	return y;
 
 }

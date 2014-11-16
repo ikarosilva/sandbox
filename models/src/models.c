@@ -28,6 +28,8 @@ _______________________________________________________________________________
 #include "conway.h"
 #include "logistic.h"
 #include "hh.h"
+#include "one.h"
+#include "three.h"
 
 /* Global variables. */
 static char *help_strings[] = {
@@ -37,6 +39,8 @@ static char *help_strings[] = {
 		"                  0 - Conway fractal time series",
 		"                  1 - Logistic model            ",
 		"                  2 - Hudgkin-Huxley Neural Excitation model",
+		"                  3 - Linear AR order 1 with state and measurement noise",
+		"                  4 - Linear coupled model with state and measurement noise",
 		" -h               print this usage summary",
 		"The standard output is one column.",
 		NULL
@@ -60,8 +64,8 @@ int main(int argc,char* argv[]) {
 
 	//Define array of pointers to functions that can be called
 	//This should map to the "-f int" parameter of the executable
-	const int indMax=3;
-	void (*funcTable[3])(int, char*)={ conway, logistic, hh};
+	const int indMax=5;
+	void (*funcTable[5])(int, char*)={ conway, logistic, hh, one, three};
 
 	while (flag && (ch = getopt(argc,argv,"hf:"))!=EOF )
 		switch(ch){
@@ -79,7 +83,7 @@ int main(int argc,char* argv[]) {
 		}
 
 	if(index> (indMax-1) ){
-		fprintf(stderr,"Unknown option for f: '%s'\n",index);
+		fprintf(stderr,"Unknown option for f: '%u'\n",index);
 		help();
 	}else {
 		funcTable[index](argc,argv);
