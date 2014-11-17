@@ -32,6 +32,8 @@ _______________________________________________________________________________
 #include "three.h"
 #include "lorenz.h"
 #include "five.h"
+#include "white.h"
+#include "sine.h"
 
 /* Global variables. */
 static char *help_strings[] = {
@@ -45,6 +47,8 @@ static char *help_strings[] = {
 		"                  4 - Linear coupled model with state and measurement noise",
 		"                  5 - Lorenz System ",
 		"                  6 - Coupled Ikeda and Henon maps ",
+		"                  7 - White Guassian noise (mean=0 unit variance) ",
+		"                  8 - Sine wave ",
 		" -h               print this usage summary",
 		"The standard output is one column.",
 		NULL
@@ -68,8 +72,8 @@ int main(int argc,char* argv[]) {
 
 	//Define array of pointers to functions that can be called
 	//This should map to the "-f int" parameter of the executable
-	const int indMax=7;
-	void (*funcTable[7])(int, char*)={ conway, logistic, hh, one, three, lorenz, five};
+	const int indMax=9;
+	void (*funcTable[9])(int, char*)={ conway, logistic, hh, one, three, lorenz, five, white, sine};
 
 	while (flag && (ch = getopt(argc,argv,"hf:"))!=EOF )
 		switch(ch){
