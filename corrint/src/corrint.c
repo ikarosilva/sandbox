@@ -15,7 +15,7 @@
 
 /* Function prototypes. */
 long input(void);
-void get_err(int windowN, int stepSize,int timeLag, double* err);
+void get_err(int windowN, int stepSize,int timeLag, double* err, int nFlag, double th);
 void countNeighbors(double *th,double *count, int countN, int Nerr, double* err, int nFlag);
 void xcorr();
 /* End of Function prototypes. */
@@ -35,14 +35,14 @@ static char *help_strings[] = {
 		"where OPTIONS may include:",
 		" -h               print this usage summary",
 		" -v               verbose mode            ",
-		" -R               calculates autocorrelation only and exits",
+		" -R               calculates autocorrelation only and exit",
+		" -p               generate recurrence data only and exit",
 		" -d int           embedded dimension size ",
 		" -t int           time lag between states",
 		" -s int           time lag within state samples",
+		" -r double        distance threshold",
 		" -D               Debug Flag, if true prints program detail",
 		" -N               Normalize Flag, if true normalize count",
-		"The standard output is one column.",
-		"The standard input is one column.",
 		NULL
 };
 
@@ -61,15 +61,16 @@ int main(int argc,char* argv[]) {
 	int dim=2;
 	char ch;
 	int stepSize=1;
-	int normalizeFlag=0, corrFlag=0;
+	int normalizeFlag=0, corrFlag=0, recurFlag=0;
 	int windowN=dim*stepSize;
 	register int i;
 	//th_arr should be sorted for speed efficiency
 	const int countN=6;
-	double th_arr[]={0.02, 0.01, 0.2, 0.3, 0.4,0.5};
 	double count[]={0, 0, 0, 0, 0,0};
+	double TH=0;
+	double TH_ARR[6]={0.02, 0.01, 0.2, 0.3, 0.4,0.5};
 
-	while ((ch = getopt(argc,argv,"hvd:t:s:R"))!=EOF )
+	while ((ch = getopt(argc,argv,"hvd:t:s:Rpr:"))!=EOF )
 		switch(ch){
 		case 'v':
 			debugFlag=1;
@@ -83,12 +84,18 @@ int main(int argc,char* argv[]) {
 		case 's':
 			stepSize=atoi(optarg);
 			break;
+		case 'r':
+			TH=atof(optarg);
+			break;
 		case 'N':
 			normalizeFlag=1;
 			break;
 		case 'R':
 			/*Calculate autocorrelation only and exits */
 			corrFlag=1;
+			break;
+		case 'p':
+			recurFlag=1;
 			break;
 		case 'h':
 			help();
@@ -99,6 +106,13 @@ int main(int argc,char* argv[]) {
 			break;
 		}
 
+	/* Define threshold array if not passed by user */
+	double* th_arr;
+	if(TH == 0 ){
+		th_arr=TH_ARR;
+	}else{
+		th_arr=&TH;
+	}
 	//Load data into input_data and get the number of samples read
 	N=input();
 
@@ -134,7 +148,7 @@ int main(int argc,char* argv[]) {
 	}
 
 	//Calculate the error matrix
-	get_err(windowN,stepSize,timeLag,err);
+	get_err(windowN,stepSize,timeLag,err,recurFlag,*th_arr);
 
 	//Get neighborhood count
 	countNeighbors(th_arr,count,countN,errN,err,normalizeFlag);
@@ -151,11 +165,12 @@ int main(int argc,char* argv[]) {
 }
 
 //Estimate the distance between the states
-void get_err(int windowN, int stepSize,int timeLag, double* err){
+void get_err(int windowN, int stepSize,int timeLag, double* err, int recurFlag, double th){
 	int i, k, z,  index=0;
 	double tmpErr;
 	//Loop through the data array starting from the end, going to the beginning.
 	//For each loop a state vector of size dim and offset timeLag is generated
+
 	for(i=N-1;i>=windowN-1;i--){
 		for(k=i-(windowN-1)-timeLag;k>=windowN-1;k--){
 			tmpErr=0;
@@ -169,8 +184,19 @@ void get_err(int windowN, int stepSize,int timeLag, double* err){
 				fprintf(stderr,"i=%d,k=%d,index=%d, tmpErr=%f\n",i,k,index,tmpErr);
 			}
 			err[index]=tmpErr;
+
+			//for recurrence plots, print any state that has at least one neighbor and exit
+			if(recurFlag == 1){
+				if(err[index]<th){
+					fprintf(stdout,"%u\t%u\n",i,k);
+					fprintf(stdout,"%u\t%u\n",k,i);
+				}
+			}
 			index++;
 		}
+	}
+	if(recurFlag){
+		exit(0);
 	}
 }
 
@@ -217,7 +243,7 @@ void xcorr(){
 	dc=(double) dc/N;
 
 	for(n=0;n<N;n++)
-	    input_data[n]=input_data[n]-dc;
+		input_data[n]=input_data[n]-dc;
 
 	for(lag=0;lag<maxLag;lag++){
 		for(n=0,R=0,R0=0;n<N-maxLag;n++){
