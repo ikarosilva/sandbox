@@ -16,7 +16,7 @@
 /* Function prototypes. */
 long input(void);
 void get_err(int windowN, int stepSize,int timeLag, double* err, int nFlag, double th);
-void countNeighbors(double *th,double *count, int countN, int Nerr, double* err, int nFlag, int Nstates);
+void countNeighbors(double *th,double *count, int countN, int Nerr, double* err, int nFlag);
 void xcorr();
 /* End of Function prototypes. */
 
@@ -151,8 +151,7 @@ int main(int argc,char* argv[]) {
 	get_err(windowN,stepSize,timeLag,err,recurFlag,*th_arr);
 
 	//Get neighborhood count
-	int Nstates= (N-windowN)*(N-windowN - 1);
-	countNeighbors(th_arr,count,countN,errN,err,normalizeFlag, Nstates);
+	countNeighbors(th_arr,count,countN,errN,err,normalizeFlag);
 
 	//Display results in column format
 	for(i=0;i<countN;i++){
@@ -202,7 +201,7 @@ void get_err(int windowN, int stepSize,int timeLag, double* err, int recurFlag, 
 }
 
 //Get the number of states within a minimum threshold
-void countNeighbors(double *th,double *count_arr, int countN, int Nerr, double* err,int nFlag,int Nstates){
+void countNeighbors(double *th,double *count_arr, int countN, int Nerr, double* err,int nFlag){
 	register int i,k;
 	//Loop through the distance matrix and then go over the th_arr
 	//in decreasing order for each element that is below the threshold,
@@ -223,7 +222,7 @@ void countNeighbors(double *th,double *count_arr, int countN, int Nerr, double* 
 	//Normalize the count
 	if(nFlag==1){
 		for(k=0;k<countN;k++)
-			count_arr[k]=2*count_arr[k]/(double) Nstates;
+			count_arr[k]=count_arr[k]/(double) Nerr;
 	}
 
 }
