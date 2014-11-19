@@ -46,7 +46,7 @@ void wbc(int argc,char* argv[]){
 	double gama=1.0;
 	double lambda =2.0;
 	double Ts=0.05;
-	double n=5.0404;
+	double n=7;
 	int windowN=(int) tau/Ts;
 	double *xt=malloc(windowN*sizeof(double));
 
@@ -74,7 +74,7 @@ void wbc(int argc,char* argv[]){
 	theta=pow(theta,n);
 	for(;i<N;i++){
 		*(xt+head)=x;
-		dx = gama*x + lambda*theta/(theta + pow(*(xt+tail),n));
+		dx = -gama*x + lambda*theta/(theta + pow(*(xt+tail),n));
 		x = x + dx*Ts;
 		//printf("%.6f\t%.6f\t%.6f\n",(double) i*Ts,x,*(xt+tail));
 		printf("%.6f\n",x);
