@@ -15,6 +15,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <math.h>
 
 static char *help_strings[] = {
 		"usage: [OPTIONS ...]\n",
@@ -44,7 +45,8 @@ void wbc(int argc,char* argv[]){
 	double tau=2.0;
 	double gama=1.0;
 	double lambda =2.0;
-	double Ts=0.5;
+	double Ts=0.05;
+	double n=5.0404;
 	int windowN=(int) tau/Ts;
 	double *xt=malloc(windowN*sizeof(double));
 
@@ -66,14 +68,16 @@ void wbc(int argc,char* argv[]){
 
 
 	double dx=0;
-	long int n=0;
+	long int i=0;
 	int head=0, tail=0;
 	int queueFull=0;
-	for(;n<N;n++){
+	theta=pow(theta,n);
+	for(;i<N;i++){
 		*(xt+head)=x;
-		dx = gama*x + lambda*theta/(theta + *(xt+tail));
+		dx = gama*x + lambda*theta/(theta + pow(*(xt+tail),n));
 		x = x + dx*Ts;
-		printf("%.6f\t%.6f\t%.6f\n",(double) n*Ts,x,*(xt+tail));
+		//printf("%.6f\t%.6f\t%.6f\n",(double) i*Ts,x,*(xt+tail));
+		printf("%.6f\n",x);
 		head++;
 		if(head>(windowN-1)){
 			queueFull=1;
