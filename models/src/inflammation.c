@@ -45,7 +45,7 @@ void inflammation(int argc,char* argv[]){
 
 	int N=80;
 	char ch;
-	double Ts=0.5; //Sampling frequency in hours
+	double Ts=0.1; //Sampling frequency in hours
 	double headerFlag=0;
 
 	//Model variables
