@@ -35,6 +35,7 @@ _______________________________________________________________________________
 #include "white.h"
 #include "sine.h"
 #include "wbc.h"
+#include "inflammation.h"
 
 static char *help_strings[] = {
 		"usage: models [OPTIONS ...]\n",
@@ -50,6 +51,7 @@ static char *help_strings[] = {
 		"                  7 - White Guassian noise (mean=0 unit variance) ",
 		"                  8 - Sine wave ",
 		"                  9 - White blood cell production ",
+		"                  10 - Inflamatory response ",
 		" -h               print this usage summary",
 		"The standard output is one column.",
 		NULL
@@ -73,8 +75,10 @@ int main(int argc,char* argv[]) {
 
 	//Define array of pointers to functions that can be called
 	//This should map to the "-f int" parameter of the executable
-	const int indMax=10;
-	void (*funcTable[10])(int, char*)={ conway, logistic, hh, one, three, lorenz, five, white, sine, wbc};
+	const int indMax=11;
+	void (*funcTable[11])(int, char*)={ conway, logistic, hh, one,
+			three, lorenz, five,
+			white, sine, wbc, inflammation};
 
 	while (flag && (ch = getopt(argc,argv,"hf:"))!=EOF )
 		switch(ch){

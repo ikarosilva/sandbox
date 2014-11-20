@@ -19,6 +19,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <math.h>
 
 static char *help_strings[] = {
 		"usage: inflammation [OPTIONS ...]\n",
@@ -48,7 +49,7 @@ void inflammation(int argc,char* argv[]){
 	double headerFlag=0;
 
 	//Model variables
-	double P=1.5; //Initial Pathogen level
+	double P=1; //Initial Pathogen level
 	double W=0;   //Initial Phagocyte level
 	double D=0;   //Initial Tissue damage
 	double CA=0.125; //Initial anti-inflamatory response
@@ -59,7 +60,7 @@ void inflammation(int argc,char* argv[]){
 	double kmp=0.01; //Rate at which response is exhausted by pathogen
 	double sm=0.005; //source of non-specific local response
 	double um=0.002; //decay rate for non-specific local response
-	double kpg=1;    //growth rate of pathogen
+	double kpg=0.3;    //growth rate of pathogen
 	double pinf=20e6; //max pathogen population
 	double kpn=1.8;  //rate at which phagocytes consume pathogen
 	double knp=0.1;  //activation of resting phagocytes by pathogen
@@ -103,7 +104,7 @@ void inflammation(int argc,char* argv[]){
 	double dCA;
 	int n=0;
 	double fn, fs,fn2, R;
-	double xdn=pow(xdn,6);
+	xdn=pow(xdn,6);
 	for(;n<N;n++){
 		R=knn*W+ knp*P + knd*D;
 		R=R/(1+ (CA/cinf)*(CA/cinf));
@@ -125,7 +126,7 @@ void inflammation(int argc,char* argv[]){
 		if(headerFlag){
 			printf("Pathogen\tPhagocyte\tDamage\tAnti-inflammatory Mediator\t\n",P,W,D,CA);
 		}
-		printf("%.6f\t%.6f\t%.6f\t%.6f\t\n",P,W,D,CA);
+		printf("%.6f %.6f %.6f %.6f \n",P,W,D,CA);
 	}
 
 }
