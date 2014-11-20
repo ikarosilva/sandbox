@@ -26,6 +26,7 @@ static char *help_strings[] = {
 		"where OPTIONS may include:",
 		" -N n             number of samples to generate",
 		" -t               output time as first column",
+		" -u               return uniform RV instead of a Gaussian RV",
 		" -h               print this usage summary",
 		"The standard output is one column.",
 		NULL
@@ -47,10 +48,14 @@ void white(int argc,char* argv[]){
 	int N=80;
 	char ch;
 	int showTime=0;
-	while ((ch = getopt(argc,argv,"hN:t"))!=EOF)
+	int isUniform=0;
+	while ((ch = getopt(argc,argv,"hN:tu"))!=EOF)
 		switch(ch){
 		case 'N':
 			N=atoi(optarg);
+			break;
+		case 'u':
+			isUniform=1;
 			break;
 		case 't':
 			showTime=1;
@@ -69,8 +74,10 @@ void white(int argc,char* argv[]){
 	double x,y;
 	for(;n<N;n++){
 		x= (rand()+1.0)/(RAND_MAX+1.0);
-		y= (rand()+1.0)/(RAND_MAX+1.0);
-		x=sqrt(-2*log(y)) * cos(2*PI*x);
+		if(isUniform==0){
+			y= (rand()+1.0)/(RAND_MAX+1.0);
+			x=sqrt(-2*log(y)) * cos(2*PI*x);
+		}
 		if(showTime){
 			printf("%u %.6f\n",n,x);
 		}else{
