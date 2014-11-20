@@ -24,7 +24,6 @@ void xcorr();
 /* Global variables. */
 double *input_data;	/* input data buffer; allocated and filled by input() */
 long N=0;
-int debugFlag=0;
 long maxLag=0;
 double *Rxx; /*autocorrelation of the input data, with length maxLag */
 /* End of Global variables. */
@@ -34,7 +33,6 @@ static char *help_strings[] = {
 		"usage: corrint [OPTIONS ...]\n",
 		"where OPTIONS may include:",
 		" -h               print this usage summary",
-		" -v               verbose mode            ",
 		" -R               calculates autocorrelation only and exit",
 		" -p               generate recurrence data only and exit",
 		" -d int           embedded dimension size ",
@@ -43,6 +41,7 @@ static char *help_strings[] = {
 		" -r double        distance threshold",
 		" -D               Debug Flag, if true prints program detail",
 		" -N               Normalize Flag, if true normalize count",
+		" -v               Estimates series dimension given an embedded dimension (-d) and threshold values (-r) parameters",
 		NULL
 };
 
@@ -61,8 +60,8 @@ int main(int argc,char* argv[]) {
 	int dim=2;
 	char ch;
 	int stepSize=1;
-	int normalizeFlag=0, corrFlag=0, recurFlag=0;
-	int windowN=dim*stepSize;
+	int normalizeFlag=0, corrFlag=0, recurFlag=0, estimateDim=0;
+	int windowN;
 	register int i;
 	//th_arr should be sorted for speed efficiency
 	const int countN=6;
@@ -73,7 +72,7 @@ int main(int argc,char* argv[]) {
 	while ((ch = getopt(argc,argv,"hvd:t:s:Rpr:N"))!=EOF )
 		switch(ch){
 		case 'v':
-			debugFlag=1;
+			estimateDim=1;
 			break;
 		case 'd':
 			dim=atoi(optarg);;
@@ -106,6 +105,9 @@ int main(int argc,char* argv[]) {
 			break;
 		}
 
+	//Calculate window size here in case dim is entered by user
+	windowN=dim*stepSize;
+
 	/* Define threshold array if not passed by user */
 	double* th_arr;
 	if(TH == 0 ){
@@ -124,9 +126,29 @@ int main(int argc,char* argv[]) {
 			fprintf(stdout,"%f\n",Rxx[i]);
 		exit(0);
 	}
-	if(debugFlag){
-		for(i=0;i<N;i++)
-			fprintf(stderr,"data[%d]=%f\n",i,input_data[i]);
+
+	//If we are estimating the signal dimension, we need to set the timeLag to the first zero crossing of the autocorrelation function
+	//Otherwise it will be either the default or what the user enters
+	if(estimateDim){
+		xcorr();
+		for(i=0;i<maxLag;i++){
+			if(Rxx[i] <=0 ){
+				timeLag=i;
+				break;
+			}
+		}
+
+		//Give a warning early on if we might not have enough point to reliably
+		//estimate the dimension given the embedding parameters
+		//This is a conservative minimum (sufficient but not necessary).
+		double minPoints= pow(10.0,dim);
+		if(N< minPoints)
+			fprintf(stderr,"Possibly not have enough point to estimate dimesion. Total points: %u, minimum required: %f",N,minPoints);
+
+		//Overwrite other parameters accordingly
+		normalizeFlag=1;
+		recurFlag=0;
+
 	}
 
 	//Find how many distance points we need to calculate and allocate memory accordingly
@@ -137,10 +159,6 @@ int main(int argc,char* argv[]) {
 	for(i=N-1;i>=windowN-1;i--,test++)
 		for(k=i-(windowN-1)-timeLag;k>=windowN-1;k--,errN++);
 
-	if(debugFlag){
-		fprintf(stderr,"pairs of states=%d,windowN=%d,timeLag=%d,stepSize=%d\n",
-				errN,windowN,timeLag,stepSize);
-	}
 	double *err;
 	if ((err = malloc(errN * sizeof(double))) == NULL) {
 		fprintf(stderr,"corrint: insufficient memory for error matrix, exiting program\n");
@@ -176,12 +194,6 @@ void get_err(int windowN, int stepSize,int timeLag, double* err, int recurFlag, 
 			tmpErr=0;
 			for(z=0;z<windowN;z+=stepSize){
 				tmpErr+=fabs(input_data[i-z]-input_data[k-z]);
-				if(debugFlag){
-					fprintf(stderr,"data[%d]-data[%d]\t",(i-z),(k-z));
-				}
-			}
-			if(debugFlag){
-				fprintf(stderr,"i=%d,k=%d,index=%d, tmpErr=%f\n",i,k,index,tmpErr);
 			}
 			err[index]=tmpErr;
 
