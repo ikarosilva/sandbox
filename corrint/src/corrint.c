@@ -181,13 +181,15 @@ int main(int argc,char* argv[]) {
 		}
 	}
 	//For the dimension estimation case, we also print out the estimate slope value
+	double slope=0;
 	if(estimateDim){
-		for(i=0;i<countN;i++){
+		for(i=1;i<countN;i++){
 			/* Ignore cases where log(0) */
 			if(count[i]==0){
 				continue;
 			}
-			fprintf(stdout,"%f \t %f\n",th_arr[i],log(count[i])/log(th_arr[i]));
+			slope=(log(count[i]) - log(count[i-1]) )/( log(th_arr[i]) -log(th_arr[i-1]) );
+			fprintf(stdout,"%f \t %f\n",th_arr[i],slope);
 		}
 		fprintf(stdout,"lag=%u\n",timeLag);
 	}
