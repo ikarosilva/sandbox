@@ -22,6 +22,7 @@ static char *help_strings[] = {
 		"where OPTIONS may include:",
 		" -N n             number of samples to generate",
 		" -h               print this usage summary",
+		" -n double        parameter n (0< n< 20, with equilibrium at 5.0404)"
 		"The standard output is one column.",
 		NULL
 };
@@ -46,14 +47,17 @@ void wbc(int argc,char* argv[]){
 	double gama=1.0;
 	double lambda =2.0;
 	double Ts=0.05;
-	double n=7;
+	double n=5.0404;
 	int windowN=(int) tau/Ts;
 	double *xt=malloc(windowN*sizeof(double));
 
-	while ((ch = getopt(argc,argv,"hN:"))!=EOF)
+	while ((ch = getopt(argc,argv,"hN:n:"))!=EOF)
 		switch(ch){
 		case 'N':
 			N=atoi(optarg);
+			break;
+		case 'n':
+			n=atof(optarg);
 			break;
 		case 'h':
 			help();
@@ -74,7 +78,7 @@ void wbc(int argc,char* argv[]){
 	theta=pow(theta,n);
 	for(;i<N;i++){
 		*(xt+head)=x;
-		dx = -gama*x + lambda*theta/(theta + pow(*(xt+tail),n));
+		dx = -gama*x + ( lambda * theta * (*(xt+tail)) )/(theta + pow(*(xt+tail),n));
 		x = x + dx*Ts;
 		//printf("%.6f\t%.6f\t%.6f\n",(double) i*Ts,x,*(xt+tail));
 		printf("%.6f\n",x);
