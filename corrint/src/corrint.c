@@ -41,7 +41,7 @@ static char *help_strings[] = {
 		" -r double        distance threshold",
 		" -D               Debug Flag, if true prints program detail",
 		" -N               Normalize Flag, if true normalize count",
-		" -v               Estimates series dimension given an embedded dimension (-d) and threshold values (-r) parameters",
+		" -v               Estimates series dimension given an embedded dimension (-d) parameter",
 		NULL
 };
 
@@ -64,10 +64,13 @@ int main(int argc,char* argv[]) {
 	int windowN;
 	register int i;
 	//th_arr should be sorted for speed efficiency
-	const int countN=6;
-	double count[]={0, 0, 0, 0, 0,0};
+	const int countN=12;
 	double TH=0;
-	double TH_ARR[6]={0.02, 0.01, 0.2, 0.3, 0.4,0.5};
+	double TH_ARR[12]={0.02, 0.1, 0.2, 0.3, 0.4, 0.5, 1.25, 1.5, 2.0 , 2.5, 3.0, 3.5};
+	double count[countN];
+
+	for(i=0;i<countN;i++)
+		count[i]=0;
 
 	while ((ch = getopt(argc,argv,"hvd:t:s:Rpr:N"))!=EOF )
 		switch(ch){
@@ -143,7 +146,7 @@ int main(int argc,char* argv[]) {
 		//This is a conservative minimum (sufficient but not necessary).
 		double minPoints= pow(10.0,dim);
 		if(N< minPoints)
-			fprintf(stderr,"Possibly not have enough point to estimate dimesion. Total points: %u, minimum required: %f",N,minPoints);
+			fprintf(stderr,"Possibly not have enough points to estimate dimension. Total points: %u, minimum required: %u\n",N,(long) minPoints);
 
 		//Overwrite other parameters accordingly
 		normalizeFlag=1;
@@ -172,10 +175,22 @@ int main(int argc,char* argv[]) {
 	countNeighbors(th_arr,count,countN,errN,err,normalizeFlag);
 
 	//Display results in column format
-	for(i=0;i<countN;i++){
-		fprintf(stdout,"%f \t %f\n",th_arr[i],count[i]);
+	if(!estimateDim){
+		for(i=0;i<countN;i++){
+			fprintf(stdout,"%f \t %f\n",th_arr[i],count[i]);
+		}
 	}
-
+	//For the dimension estimation case, we also print out the estimate slope value
+	if(estimateDim){
+		for(i=0;i<countN;i++){
+			/* Ignore cases where log(0) */
+			if(count[i]==0){
+				continue;
+			}
+			fprintf(stdout,"%f \t %f\n",th_arr[i],log(count[i])/log(th_arr[i]));
+		}
+		fprintf(stdout,"lag=%u\n",timeLag);
+	}
 
 	//Free memory allocated by input
 	free(input_data);
