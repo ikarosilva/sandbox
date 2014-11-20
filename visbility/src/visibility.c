@@ -27,25 +27,25 @@ long input(void);
 long N=0;
 double *input_data;	/* input data buffer; allocated and filled by input()
  	 	 	 	 	    x and y series will be interleaved starting with x
- 	 	 	 	 	 */
+ */
 
 
 static char *help_strings[] = {
- "usage: visibility [OPTIONS ...]\n",
- "where OPTIONS may include:",
- " -h               print this usage summary",
- "The standard output is one column.",
-NULL
+		"usage: visibility [OPTIONS ...]\n",
+		"where OPTIONS may include:",
+		" -h               print this usage summary",
+		"The standard output is one column.",
+		NULL
 };
 
 static void help()
 {
-    int i;
+	int i;
 
-    fprintf(stderr, help_strings[0]);
-    for (i = 1; help_strings[i] != NULL; i++)
-    	fprintf(stderr, "%s\n", help_strings[i]);
-    exit(-1);
+	fprintf(stderr, help_strings[0]);
+	for (i = 1; help_strings[i] != NULL; i++)
+		fprintf(stderr, "%s\n", help_strings[i]);
+	exit(-1);
 }
 
 
@@ -112,7 +112,8 @@ int main(int argc,char* argv[]){
 
 	//Output the degree distribution
 	for(a=0;a<samples;a++){
-		printf("%u %f\n",a,Pk);
+		if( *(Pk + a) != 0)
+			printf("%u %f\n",a,*(Pk + a));
 	}
 
 	return 0;
@@ -124,7 +125,7 @@ long input()
 {
 	long maxdat = 0L, npts = 0L;
 	double x,y;
-	while (scanf("%f %f",&x,&y) == 1) {
+	while (scanf("%f %f",&x,&y) == 2) {
 		if (npts >= maxdat) {
 			double *s;
 			maxdat += 50000;	/* allow the input buffer to grow (the increment is arbitrary) */
