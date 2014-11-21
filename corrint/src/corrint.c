@@ -17,6 +17,7 @@
 long input(void);
 void get_err(int windowN, int stepSize,int timeLag, double* err, int nFlag, double th);
 void countNeighbors(double *th,double *count, int countN, int Nerr, double* err, int nFlag);
+void predictHalf(int windowN, int stepSize,int timeLag, int neighbors);
 void xcorr();
 /* End of Function prototypes. */
 
@@ -41,7 +42,9 @@ static char *help_strings[] = {
 		" -r double        distance threshold",
 		" -D               Debug Flag, if true prints program detail",
 		" -N               Normalize Flag, if true normalize count",
-		" -v               Estimates series dimension given an embedded dimension (-d) parameter",
+		" -v               Estimates series dimension and scaling region given an embedded dimension (-d) parameter",
+		" -n int           Number of closest neighbors used for prediction ",
+		" -P               User first half of the time series as a model to predict the second half (point by point)",
 		NULL
 };
 
@@ -60,7 +63,7 @@ int main(int argc,char* argv[]) {
 	int dim=2;
 	char ch;
 	int stepSize=1;
-	int normalizeFlag=0, corrFlag=0, recurFlag=0, estimateDim=0;
+	int normalizeFlag=0, corrFlag=0, recurFlag=0, estimateDim=0, predictSecondHalf;
 	int windowN;
 	register int i;
 	//th_arr should be sorted for speed efficiency
@@ -68,14 +71,18 @@ int main(int argc,char* argv[]) {
 	double TH=0;
 	double TH_ARR[12]={0.02, 0.1, 0.2, 0.3, 0.4, 0.5, 1.25, 1.5, 2.0 , 2.5, 3.0, 3.5};
 	double count[countN];
+	int neighbors=10;
 
 	for(i=0;i<countN;i++)
 		count[i]=0;
 
-	while ((ch = getopt(argc,argv,"hvd:t:s:Rpr:N"))!=EOF )
+	while ((ch = getopt(argc,argv,"hvd:t:s:Rpr:Nn:"))!=EOF )
 		switch(ch){
 		case 'v':
 			estimateDim=1;
+			break;
+		case 'n':
+			neighbors=atoi(optarg);
 			break;
 		case 'd':
 			dim=atoi(optarg);;
@@ -98,6 +105,9 @@ int main(int argc,char* argv[]) {
 			break;
 		case 'p':
 			recurFlag=1;
+			break;
+		case 'P':
+			predictSecondHalf=1;
 			break;
 		case 'h':
 			help();
@@ -171,6 +181,12 @@ int main(int argc,char* argv[]) {
 	//Calculate the error matrix
 	get_err(windowN,stepSize,timeLag,err,recurFlag,*th_arr);
 
+	//If in prediction mode, predict base or error matrix and exit from here
+	if(predictSecondHalf){
+		double *prediction=malloc((errN/2)*sizeof(double));
+		predictHalf(windowN,stepSize,timeLag,neighbors);
+		exit(0);
+	}
 	//Get neighborhood count
 	countNeighbors(th_arr,count,countN,errN,err,normalizeFlag);
 
@@ -227,6 +243,84 @@ void get_err(int windowN, int stepSize,int timeLag, double* err, int recurFlag, 
 	if(recurFlag){
 		exit(0);
 	}
+}
+
+void predictHalf(int windowN, int stepSize,int timeLag, int neighbors){
+	int i, k, z, n;
+	double dist;
+
+	//The iterative approach should be the same as get_err, logging the closest neighboring values and their predictions
+	double* blockDistance=calloc(neighbors,sizeof(double));
+	double* blockFutures=calloc(neighbors,sizeof(double));
+	double maxBlockDistance=-1;;
+	int count=0, maxInd;
+	double prediction;
+	double err=0, cov;
+	double dc=0;
+
+	for(i=N/2+timeLag;i<N-1;i++){
+		dc+=input_data[i];
+	}
+	dc= dc/( (N-1) - (N/2) );
+
+	for(i=N/2+timeLag;i<N-1;i++){
+		//Reset predictions and neighborhood parameters
+		for(n=0;n<neighbors;n++){
+			*(blockDistance+n)=-1;
+			*(blockFutures+n)=0;
+		}
+		maxBlockDistance=-1;
+		maxInd=0;
+		count=0;
+
+		for(k=(N/2)-timeLag;k>=windowN-1;k--){
+			//Get distance from current point
+			for(z=0;z<windowN;z+=stepSize){
+				dist+=fabs(input_data[i-z]-input_data[k-z]);
+			}
+
+			//Add point if distance is small or neighborhood is not full
+			if(count<neighbors){
+				//Filling up the hood
+				*(blockDistance+count)=dist;
+				*(blockFutures+count)=input_data[k+1];
+				if(maxBlockDistance < dist ){
+					maxBlockDistance=dist;
+					maxInd=count;
+				}
+				count++;
+			}else{
+				//If point is cool enough, kick the lamest brother out of the hood
+				if(dist<maxBlockDistance){
+					*(blockDistance+maxInd)=dist;
+					*(blockFutures+maxInd)=input_data[k+1];
+					maxBlockDistance=dist;
+					//Recalculate the newest lamest bro
+					for(n=0;n<neighbors;n++){
+						if(maxBlockDistance < *(blockDistance+n) ){
+							maxBlockDistance= *(blockDistance+n);
+							maxInd=n;
+						}
+					}
+				}
+			}
+		}
+
+		//End of pass, average predictions of all the hood
+		prediction=0;
+		for(n=0;n<neighbors;n++){
+			prediction += (*(blockFutures+n))/count;
+		}
+		//Output Prediction and true value
+		fprintf(stdout,"%f\t%f\n",prediction,input_data[i+1]);
+
+		//Calculate cumulative error and covariance of time series
+		err+=(prediction-input_data[i-z])*(prediction-input_data[i-z]);
+		cov+=(dc-input_data[i-z])*(dc-input_data[i-z]);
+	}
+
+	fprintf(stdout,"err/cov = %f\n",(err/cov));
+	exit(0);
 }
 
 //Get the number of states within a minimum threshold
