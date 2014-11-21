@@ -69,8 +69,8 @@ int main(int argc,char* argv[]){
 	N=input();
 
 	int a=0,b=0,c=0;
-	double ya, yb, yc;
-	double ta, tb, tc;
+	double ya, yc, yb;
+	double ta, tc, tb;
 	long samples=N/2; //data is interleaved
 	int* count=malloc(samples*sizeof(int));
 	double* Pk=malloc(samples*sizeof(double));
@@ -78,17 +78,18 @@ int main(int argc,char* argv[]){
 	fprintf(stderr,"N=%u\n",N);
 	//Calculate the visibility count
 	int isVisible=1;
-	for(a=0;a<N-1;a=a+2){
-		*(count+a)=0;
+	for(a=0;a<N-3;a=a+2){
+		*(count+a)=1;
+		*(count+a+2)=1;
 		ta=*(input_data+a);
 		ya=*(input_data+a+1);
-		for(c=a+4;c<N;c=c+2){
+		for(b=a+4;b<N-1;b=b+2){
 			isVisible=1;
-			tc=*(input_data+c);
-			yc=*(input_data+c+1);
-			for(b=a+2;b<c;b=b+2){
-				tb=*(input_data+b);
-				yb=*(input_data+b+1);
+			tb=*(input_data+b);
+			yb=*(input_data+b+1);
+			for(c=a+2;c<b;c=c+2){
+				tc=*(input_data+c);
+				yc=*(input_data+c+1);
 				if ( yc > (yb + (ya -yb)*(tb-tc)/(tb-ta)) ){
 					//Visibility broken, exit loop inner loop only
 					isVisible=0;
