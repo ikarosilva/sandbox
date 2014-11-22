@@ -18,6 +18,7 @@ long input(void);
 void get_err(int windowN, int stepSize,int timeLag, double* err, int nFlag, double th);
 void countNeighbors(double *th,double *count, int countN, int Nerr, double* err, int nFlag);
 void predictHalf(int windowN, int stepSize,int timeLag, int neighbors);
+void smooth(int windowN, int stepSize,int timeLag, int neighbors);
 void xcorr();
 /* End of Function prototypes. */
 
@@ -37,7 +38,7 @@ static char *help_strings[] = {
 		" -R               calculates autocorrelation only and exit",
 		" -p               generate recurrence data only and exit",
 		" -d int           embedded dimension size ",
-		" -t int           time lag between states",
+		" -t int           time lag between states (if -1, estimate timeLag from first zero crossing of autocorrelation)",
 		" -s int           time lag within state samples",
 		" -r double        distance threshold",
 		" -D               Debug Flag, if true prints program detail",
@@ -45,6 +46,7 @@ static char *help_strings[] = {
 		" -v               Estimates series dimension and scaling region given an embedded dimension (-d) parameter",
 		" -n int           Number of closest neighbors used for prediction ",
 		" -P               User first half of the time series as a model to predict the second half (point by point)",
+		" -S               Filter the time series by attempting to predict current point  based on the other points",
 		NULL
 };
 
@@ -63,7 +65,7 @@ int main(int argc,char* argv[]) {
 	int dim=2;
 	char ch;
 	int stepSize=1;
-	int normalizeFlag=0, corrFlag=0, recurFlag=0, estimateDim=0, predictSecondHalf;
+	int normalizeFlag=0, corrFlag=0, recurFlag=0, estimateDim=0, predictSecondHalf=0, smoothFlag=0;
 	int windowN;
 	register int i;
 	//th_arr should be sorted for speed efficiency
@@ -76,7 +78,7 @@ int main(int argc,char* argv[]) {
 	for(i=0;i<countN;i++)
 		count[i]=0;
 
-	while ((ch = getopt(argc,argv,"hvd:t:s:Rpr:Nn:"))!=EOF )
+	while ((ch = getopt(argc,argv,"hvd:t:s:Rpr:Nn:PS"))!=EOF )
 		switch(ch){
 		case 'v':
 			estimateDim=1;
@@ -108,6 +110,9 @@ int main(int argc,char* argv[]) {
 			break;
 		case 'P':
 			predictSecondHalf=1;
+			break;
+		case 'S':
+			smoothFlag=1;
 			break;
 		case 'h':
 			help();
@@ -142,7 +147,7 @@ int main(int argc,char* argv[]) {
 
 	//If we are estimating the signal dimension, we need to set the timeLag to the first zero crossing of the autocorrelation function
 	//Otherwise it will be either the default or what the user enters
-	if(estimateDim){
+	if(estimateDim || (timeLag<0)){
 		xcorr();
 		for(i=0;i<maxLag;i++){
 			if(Rxx[i] <=0 ){
@@ -150,7 +155,8 @@ int main(int argc,char* argv[]) {
 				break;
 			}
 		}
-
+	}
+	if(estimateDim){
 		//Give a warning early on if we might not have enough point to reliably
 		//estimate the dimension given the embedding parameters
 		//This is a conservative minimum (sufficient but not necessary).
@@ -181,12 +187,18 @@ int main(int argc,char* argv[]) {
 	//Calculate the error matrix
 	get_err(windowN,stepSize,timeLag,err,recurFlag,*th_arr);
 
-	//If in prediction mode, predict base or error matrix and exit from here
+	//If in prediction mode, predict based or error matrix and exit from here
 	if(predictSecondHalf){
-		double *prediction=malloc((errN/2)*sizeof(double));
 		predictHalf(windowN,stepSize,timeLag,neighbors);
 		exit(0);
 	}
+
+	//If in smooth mode, smooth based or error matrix and exit from here
+	if(smoothFlag){
+		smooth(windowN,stepSize,timeLag,neighbors);
+		exit(0);
+	}
+
 	//Get neighborhood count
 	countNeighbors(th_arr,count,countN,errN,err,normalizeFlag);
 
@@ -245,6 +257,92 @@ void get_err(int windowN, int stepSize,int timeLag, double* err, int recurFlag, 
 	}
 }
 
+void smooth(int windowN, int stepSize,int timeLag, int neighbors){
+	int i, k, z, n;
+	double dist;
+
+	//The iterative approach should be the same as get_err, logging the closest neighboring values and their predictions
+	double* blockDistance=calloc(neighbors,sizeof(double));
+	double* blockFutures=calloc(neighbors,sizeof(double));
+	double maxBlockDistance=-1;;
+	int count=0, maxInd;
+	double prediction;
+	double err=0, cov;
+	double dc=0;
+
+	for(i=0;i<N-1;i++){
+		dc+=input_data[i];
+	}
+	dc= dc/( (double) N);
+
+
+	for(i=windowN;i<N-1;i++){
+		//Reset predictions and neighborhood parameters
+		for(n=0;n<neighbors;n++){
+			*(blockDistance+n)=-1;
+			*(blockFutures+n)=0;
+		}
+		maxBlockDistance=-1;
+		maxInd=0;
+		count=0;
+
+		for(k=windowN;k<N-1;k++){
+			//Get distance from current point if it lies outside its region
+			if( k >= i-windowN && k < i)
+				continue;
+			if( (k-windowN) >= (i-windowN) && (k-windowN) < i)
+				continue;
+			if( k==i )
+				continue;
+			dist=0;
+			for(z=0;z<windowN;z+=stepSize){
+				dist+=fabs(input_data[i-z]-input_data[k-z]);
+			}
+
+			//Add point if distance is small or neighborhood is not full
+			if(count<neighbors){
+				//Filling up the hood
+				*(blockDistance+count)=dist;
+				*(blockFutures+count)=input_data[k+1];
+				if(maxBlockDistance < dist ){
+					maxBlockDistance=dist;
+					maxInd=count;
+				}
+				count++;
+			}else{
+				//If point is cool enough, kick the lamest brother out of the hood
+				if(dist<maxBlockDistance){
+					*(blockDistance+maxInd)=dist;
+					*(blockFutures+maxInd)=input_data[k+1];
+					maxBlockDistance=dist;
+					//Recalculate the newest lamest bro
+					for(n=0;n<neighbors;n++){
+						if(maxBlockDistance < *(blockDistance+n) ){
+							maxBlockDistance= *(blockDistance+n);
+							maxInd=n;
+						}
+					}
+				}
+			}
+		} //End of neighbor search
+
+		//End of pass, average predictions of all the hood
+		prediction=0;
+		for(n=0;n<count;n++){
+			prediction += (*(blockFutures+n))/count;
+		}
+		//Output Prediction and true value
+		fprintf(stdout,"%f\t%f\n",prediction,input_data[i+1]);
+
+		//Calculate cumulative error and covariance of time series
+		err+=(prediction-input_data[i+1])*(prediction-input_data[i+1]);
+		cov+=(dc-input_data[i+1])*(dc-input_data[i+1]);
+	}
+
+	fprintf(stdout,"err/cov = %f\n",(err/cov));
+	exit(0);
+}
+
 void predictHalf(int windowN, int stepSize,int timeLag, int neighbors){
 	int i, k, z, n;
 	double dist;
@@ -263,6 +361,7 @@ void predictHalf(int windowN, int stepSize,int timeLag, int neighbors){
 	}
 	dc= dc/( (N-1) - (N/2) );
 
+
 	for(i=N/2+timeLag;i<N-1;i++){
 		//Reset predictions and neighborhood parameters
 		for(n=0;n<neighbors;n++){
@@ -275,6 +374,7 @@ void predictHalf(int windowN, int stepSize,int timeLag, int neighbors){
 
 		for(k=(N/2)-timeLag;k>=windowN-1;k--){
 			//Get distance from current point
+			dist=0;
 			for(z=0;z<windowN;z+=stepSize){
 				dist+=fabs(input_data[i-z]-input_data[k-z]);
 			}
@@ -308,15 +408,15 @@ void predictHalf(int windowN, int stepSize,int timeLag, int neighbors){
 
 		//End of pass, average predictions of all the hood
 		prediction=0;
-		for(n=0;n<neighbors;n++){
+		for(n=0;n<count;n++){
 			prediction += (*(blockFutures+n))/count;
 		}
 		//Output Prediction and true value
 		fprintf(stdout,"%f\t%f\n",prediction,input_data[i+1]);
 
 		//Calculate cumulative error and covariance of time series
-		err+=(prediction-input_data[i-z])*(prediction-input_data[i-z]);
-		cov+=(dc-input_data[i-z])*(dc-input_data[i-z]);
+		err+=(prediction-input_data[i+1])*(prediction-input_data[i+1]);
+		cov+=(dc-input_data[i+1])*(dc-input_data[i+1]);
 	}
 
 	fprintf(stdout,"err/cov = %f\n",(err/cov));
