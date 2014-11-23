@@ -17,9 +17,10 @@
 long input(void);
 void get_err(int windowN, int stepSize,int timeLag, double* err, int nFlag, double th);
 void countNeighbors(double *th,double *count, int countN, int Nerr, double* err, int nFlag);
-void predictHalf(int windowN, int stepSize,int timeLag, int neighbors);
+void predictHalf(int windowN, int stepSize,int timeLag, int neighbors, int linearStateStim);
 void smooth(int windowN, int stepSize,int timeLag, int neighbors);
 void xcorr();
+void linearFit(double* x,double* y,int N, double* m,double* b);
 /* End of Function prototypes. */
 
 
@@ -43,10 +44,14 @@ static char *help_strings[] = {
 		" -r double        distance threshold",
 		" -D               Debug Flag, if true prints program detail",
 		" -N               Normalize Flag, if true normalize count",
-		" -v               Estimates series dimension and scaling region given an embedded dimension (-d) parameter",
+		" -v               Estimates correlation dimension and scaling region given an embedded dimension (-d) parameter",
+		" -a               Use this option along with the '-v' option to estimate correlation dimension based on only 2 threshold"
+		"                  values determined from the data series\n"
 		" -n int           Number of closest neighbors used for prediction ",
 		" -P               User first half of the time series as a model to predict the second half (point by point)",
 		" -S               Filter the time series by attempting to predict current point  based on the other points",
+		" -A               Use mean and slope (linear state approximation) when doing prediction and smoothing (optinos "
+		"                  -P and -S.",
 		NULL
 };
 
@@ -66,6 +71,7 @@ int main(int argc,char* argv[]) {
 	char ch;
 	int stepSize=1;
 	int normalizeFlag=1, corrFlag=0, recurFlag=0, estimateDim=0, predictSecondHalf=0, smoothFlag=0;
+	int autoEstimateDim=0, linearStateStim=0;
 	int windowN;
 	register int i;
 	//th_arr should be sorted for speed efficiency
@@ -78,7 +84,7 @@ int main(int argc,char* argv[]) {
 	for(i=0;i<countN;i++)
 		count[i]=0;
 
-	while ((ch = getopt(argc,argv,"hvd:t:s:Rpr:Nn:PS"))!=EOF )
+	while ((ch = getopt(argc,argv,"hvd:t:s:Rpr:Nn:PSaA"))!=EOF )
 		switch(ch){
 		case 'v':
 			estimateDim=1;
@@ -113,6 +119,12 @@ int main(int argc,char* argv[]) {
 			break;
 		case 'S':
 			smoothFlag=1;
+			break;
+		case 'a':
+			autoEstimateDim=1;
+			break;
+		case 'A':
+			linearStateStim=1;
 			break;
 		case 'h':
 			help();
@@ -160,7 +172,7 @@ int main(int argc,char* argv[]) {
 		//This is a conservative minimum (sufficient but not necessary).
 		double minPoints= pow(10.0,dim);
 		if(N< minPoints)
-			fprintf(stderr,"Possibly not have enough points to estimate dimension. Total points: %u, minimum required: %u\n",N,(long) minPoints);
+			fprintf(stderr,"Possibly not have enough points to estimate dimension. Total points: %u, sufficient minimum required: %u\n",N,(long) minPoints);
 
 		//Overwrite other parameters accordingly
 		normalizeFlag=1;
@@ -171,8 +183,10 @@ int main(int argc,char* argv[]) {
 	//Find how many distance points we need to calculate and allocate memory accordingly
 	int k, errN=0,test=0;
 	//TODO: Find  a way to put this in close form.
-	// First loop: T=(N-windowN+1)
-	// Second loop: K= ?
+	// According to Kaplan and Glass this should be:
+	//  (N-(1-dim)*stepSize)(N-(1-dim)*stepSize - 1) - timeLag
+	//But we should check this properly
+
 	for(i=N-1;i>=windowN-1;i--,test++)
 		for(k=i-(windowN-1)-timeLag;k>=windowN-1;k--,errN++);
 
@@ -187,7 +201,7 @@ int main(int argc,char* argv[]) {
 
 	//If in prediction mode, predict based or error matrix and exit from here
 	if(predictSecondHalf){
-		predictHalf(windowN,stepSize,timeLag,neighbors);
+		predictHalf(windowN,stepSize,timeLag,neighbors,linearStateStim);
 		exit(0);
 	}
 
@@ -206,18 +220,54 @@ int main(int argc,char* argv[]) {
 			fprintf(stdout,"%f \t %f\n",*(th_arr+i),count[i]);
 		}
 	}
+
 	//For the dimension estimation case, we also print out the estimate slope value
 	double slope=0, slope2=0;
 	if(estimateDim){
-		slope=(log(count[1]) - log(count[0]) )/( log(*(th_arr+1)) -log(*th_arr) );
-		fprintf(stdout,"%f \t %f\n",*th_arr,slope);
-		for(i=1;i<countN-1;i++){
-			slope=(log(count[i]) - log(count[i-1]) )/( log(*(th_arr+i)) -log(*(th_arr+i-1)) );
-			slope2=(log(count[i+1]) - log(count[i]) )/( log(*(th_arr+i+1)) -log(*(th_arr+i)) );
-			fprintf(stdout,"%f \t %f\n",*(th_arr+i),(slope+slope2)/2.0);
+		if(autoEstimateDim != 1){
+			slope=(log(count[1]) - log(count[0]) )/( log(*(th_arr+1)) -log(*th_arr) );
+			fprintf(stdout,"%f \t %f\n",*th_arr,slope);
+			for(i=1;i<countN-1;i++){
+				slope=(log(count[i]) - log(count[i-1]) )/( log(*(th_arr+i)) -log(*(th_arr+i-1)) );
+				slope2=(log(count[i+1]) - log(count[i]) )/( log(*(th_arr+i+1)) -log(*(th_arr+i)) );
+				fprintf(stdout,"%f \t %f\n",*(th_arr+i),(slope+slope2)/2.0);
+			}
+			slope=(log(count[countN-1]) - log(count[countN-2]) )/( log(*(th_arr+countN-1)) -log(*(th_arr+countN-2)) );
+			fprintf(stdout,"%f \t %f\n",*(th_arr+countN-1),slope);
+		}else{
+			//For the autoEstimateDim case, the first threshold is r1=signma/4 and the second one is
+			//the one that yield a count closest to 5x the first
+			//Get variance of the time series
+			double* r1=malloc(sizeof(double));
+			double* countR1=malloc(sizeof(double));
+			double var=0, dc=0;
+			for(i=0;i<N;i++){
+				var+= input_data[i]*input_data[i];
+				dc += input_data[i];
+			}
+			var= var/((double) N) - dc*dc/( (double) N*N);
+			*r1=sqrt(var)/4.0;
+			countNeighbors(r1,countR1,1,errN,err,normalizeFlag);
+
+			//Get value that is closest to 5x the r1
+			double opt=(*countR1)/5.0, val, best=INFINITY;
+			int bestInd=-1;
+			for(i=0;i<countN;i++){
+				val=abs(opt-count[i]);
+				if(val<best){
+					best=val;
+					bestInd=i;
+				}
+			}
+			if(bestInd <0){
+				fprintf(stderr,"Could not find optimal scaling region for series ( std=%f, R1=%f, C(R2)=%f, log(C(R2))=%f ).\n",var,*r1,opt,log(opt));
+				exit(1);
+			}
+			slope=(log(*countR1) - log(count[bestInd]) )/( log(*r1) -log(*(th_arr+bestInd)) );
+			fprintf(stdout,"%f \t %f\n",*r1,slope);
 		}
-		slope=(log(count[countN-1]) - log(count[countN-2]) )/( log(*(th_arr+countN-1)) -log(*(th_arr+countN-2)) );
-		fprintf(stdout,"%f \t %f\n",*(th_arr+countN-1),slope);
+
+		//Print estimated lag
 		fprintf(stdout,"lag=%u\n",timeLag);
 	}
 
@@ -342,13 +392,17 @@ void smooth(int windowN, int stepSize,int timeLag, int neighbors){
 	exit(0);
 }
 
-void predictHalf(int windowN, int stepSize,int timeLag, int neighbors){
+void predictHalf(int windowN, int stepSize,int timeLag, int neighbors,int linearStateStim){
 	int i, k, z, n;
 	double dist;
 
 	//The iterative approach should be the same as get_err, logging the closest neighboring values and their predictions
 	double* blockDistance=calloc(neighbors,sizeof(double));
 	double* blockFutures=calloc(neighbors,sizeof(double));
+	double* blockCurrent;
+	if(linearStateStim){
+		blockCurrent=calloc(neighbors,sizeof(double));
+	}
 	double maxBlockDistance=-1;;
 	int count=0, maxInd;
 	double prediction;
@@ -366,6 +420,9 @@ void predictHalf(int windowN, int stepSize,int timeLag, int neighbors){
 		for(n=0;n<neighbors;n++){
 			*(blockDistance+n)=-1;
 			*(blockFutures+n)=0;
+			if(linearStateStim){
+				*(blockCurrent+n)=0;
+			}
 		}
 		maxBlockDistance=-1;
 		maxInd=0;
@@ -383,6 +440,9 @@ void predictHalf(int windowN, int stepSize,int timeLag, int neighbors){
 				//Filling up the hood
 				*(blockDistance+count)=dist;
 				*(blockFutures+count)=input_data[k+1];
+				if(linearStateStim){
+					*(blockCurrent+n)=input_data[k];
+				}
 				if(maxBlockDistance < dist ){
 					maxBlockDistance=dist;
 					maxInd=count;
@@ -393,6 +453,9 @@ void predictHalf(int windowN, int stepSize,int timeLag, int neighbors){
 				if(dist<maxBlockDistance){
 					*(blockDistance+maxInd)=dist;
 					*(blockFutures+maxInd)=input_data[k+1];
+					if(linearStateStim){
+						*(blockCurrent+n)=input_data[k];
+					}
 					maxBlockDistance=dist;
 					//Recalculate the newest lamest bro
 					for(n=0;n<neighbors;n++){
@@ -407,8 +470,14 @@ void predictHalf(int windowN, int stepSize,int timeLag, int neighbors){
 
 		//End of pass, average predictions of all the hood
 		prediction=0;
-		for(n=0;n<count;n++){
-			prediction += (*(blockFutures+n))/count;
+		if(linearStateStim==1){
+			double *m,*b;
+			linearFit(blockCurrent,blockFutures,count,m,b);
+			prediction= (*m) + ( (*b) * input_data[i]);
+		}else{
+			for(n=0;n<count;n++){
+				prediction += (*(blockFutures+n))/count;
+			}
 		}
 		//Output Prediction and true value
 		fprintf(stdout,"%f\t%f\n",prediction,input_data[i+1]);
@@ -505,4 +574,21 @@ long input()
 		exit(-1);
 	}
 	return (npts);
+}
+
+void linearFit(double* x, double* y,int N, double* m, double* b){
+	double Sx=0, Sxx=0, Sy=0, Sxy=0, Syy=0;
+	int i;
+	*m=0;
+	*b=0;
+	for(i=0;i<N;i++){
+		Sx+= (*(x+i));
+		Sy+= (*(y+i));
+		Sxx= (*(x+i)) * (*(x+i));
+		Syy= (*(y+i)) * (*(y+i));
+		Sxy= (*(x+i)) * (*(y+i));
+	}
+
+	*b= (N*Sxy - Sx*Sy) /(N*Sxx - Sx*Sx);
+	*m= (Sy/((double)N)) - (*b)*Sx/((double) N);
 }
