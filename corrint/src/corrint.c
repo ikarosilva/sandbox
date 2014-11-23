@@ -65,13 +65,13 @@ int main(int argc,char* argv[]) {
 	int dim=2;
 	char ch;
 	int stepSize=1;
-	int normalizeFlag=0, corrFlag=0, recurFlag=0, estimateDim=0, predictSecondHalf=0, smoothFlag=0;
+	int normalizeFlag=1, corrFlag=0, recurFlag=0, estimateDim=0, predictSecondHalf=0, smoothFlag=0;
 	int windowN;
 	register int i;
 	//th_arr should be sorted for speed efficiency
-	const int countN=12;
-	double TH=0;
-	double TH_ARR[12]={0.02, 0.1, 0.2, 0.3, 0.4, 0.5, 1.25, 1.5, 2.0 , 2.5, 3.0, 3.5};
+	const int countN=19;
+	double TH=-1;
+	double TH_ARR[19]={0.02, 0.1, 0.2, 0.3, 0.4, 0.5,0.75, 1.25, 1.5, 1.75, 2.0 , 2.25, 2.5, 2.75, 3.0, 3.25, 3.5, 3.75, 4.0};
 	double count[countN];
 	int neighbors=10;
 
@@ -126,16 +126,14 @@ int main(int argc,char* argv[]) {
 	//Calculate window size here in case dim is entered by user
 	windowN=dim*stepSize;
 
-	/* Define threshold array if not passed by user */
-	double* th_arr;
-	if(TH == 0 ){
-		th_arr=TH_ARR;
-	}else{
-		th_arr=&TH;
+	/* Define single threshold value if passed by user, otherwise use standard array */
+	double* th_arr=TH_ARR;
+	if(TH != -1 ){
+		*th_arr=TH;
 	}
+
 	//Load data into input_data and get the number of samples read
 	N=input();
-
 
 	if(corrFlag){
 		/*Calculate autocorrelation and exit */
@@ -205,20 +203,21 @@ int main(int argc,char* argv[]) {
 	//Display results in column format
 	if(!estimateDim){
 		for(i=0;i<countN;i++){
-			fprintf(stdout,"%f \t %f\n",th_arr[i],count[i]);
+			fprintf(stdout,"%f \t %f\n",*(th_arr+i),count[i]);
 		}
 	}
 	//For the dimension estimation case, we also print out the estimate slope value
-	double slope=0;
+	double slope=0, slope2=0;
 	if(estimateDim){
-		for(i=1;i<countN;i++){
-			/* Ignore cases where log(0) */
-			if(count[i]==0){
-				continue;
-			}
-			slope=(log(count[i]) - log(count[i-1]) )/( log(th_arr[i]) -log(th_arr[i-1]) );
-			fprintf(stdout,"%f \t %f\n",th_arr[i],slope);
+		slope=(log(count[1]) - log(count[0]) )/( log(*(th_arr+1)) -log(*th_arr) );
+		fprintf(stdout,"%f \t %f\n",*th_arr,slope);
+		for(i=1;i<countN-1;i++){
+			slope=(log(count[i]) - log(count[i-1]) )/( log(*(th_arr+i)) -log(*(th_arr+i-1)) );
+			slope2=(log(count[i+1]) - log(count[i]) )/( log(*(th_arr+i+1)) -log(*(th_arr+i)) );
+			fprintf(stdout,"%f \t %f\n",*(th_arr+i),(slope+slope2)/2.0);
 		}
+		slope=(log(count[countN-1]) - log(count[countN-2]) )/( log(*(th_arr+countN-1)) -log(*(th_arr+countN-2)) );
+		fprintf(stdout,"%f \t %f\n",*(th_arr+countN-1),slope);
 		fprintf(stdout,"lag=%u\n",timeLag);
 	}
 
