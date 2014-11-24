@@ -17,10 +17,10 @@
 long input(void);
 void get_err(int windowN, int stepSize,int timeLag, double* err, int nFlag, double th);
 void countNeighbors(double *th,double *count, int countN, int Nerr, double* err, int nFlag);
-void predictHalf(int windowN, int stepSize,int timeLag, int neighbors, int linearStateStim);
+void predictHalf(int windowN, int stepSize,int timeLag, int neighbors, int linearStateStim, int dimSize);
 void smooth(int windowN, int stepSize,int timeLag, int neighbors);
 void xcorr();
-void linearFit(double* x,double* y,int N, double* m,double* b);
+void linearFit(int* blockIndex,int dimSize,int stepSize, int neighboors, double* m,double* b);
 /* End of Function prototypes. */
 
 
@@ -201,7 +201,7 @@ int main(int argc,char* argv[]) {
 
 	//If in prediction mode, predict based or error matrix and exit from here
 	if(predictSecondHalf){
-		predictHalf(windowN,stepSize,timeLag,neighbors,linearStateStim);
+		predictHalf(windowN,stepSize,timeLag,neighbors,linearStateStim,dim);
 		exit(0);
 	}
 
@@ -392,17 +392,14 @@ void smooth(int windowN, int stepSize,int timeLag, int neighbors){
 	exit(0);
 }
 
-void predictHalf(int windowN, int stepSize,int timeLag, int neighbors,int linearStateStim){
+void predictHalf(int windowN, int stepSize,int timeLag, int neighbors,int linearStateStim, int dimSize){
 	int i, k, z, n;
 	double dist;
 
 	//The iterative approach should be the same as get_err, logging the closest neighboring values and their predictions
 	double* blockDistance=calloc(neighbors,sizeof(double));
-	double* blockFutures=calloc(neighbors,sizeof(double));
-	double* blockCurrent;
-	if(linearStateStim){
-		blockCurrent=calloc(neighbors,sizeof(double));
-	}
+	int* blockIndex=calloc(neighbors,sizeof(int));
+
 	double maxBlockDistance=-1;;
 	int count=0, maxInd;
 	double prediction;
@@ -419,10 +416,7 @@ void predictHalf(int windowN, int stepSize,int timeLag, int neighbors,int linear
 		//Reset predictions and neighborhood parameters
 		for(n=0;n<neighbors;n++){
 			*(blockDistance+n)=-1;
-			*(blockFutures+n)=0;
-			if(linearStateStim){
-				*(blockCurrent+n)=0;
-			}
+			*(blockIndex+n)=0;
 		}
 		maxBlockDistance=-1;
 		maxInd=0;
@@ -439,10 +433,7 @@ void predictHalf(int windowN, int stepSize,int timeLag, int neighbors,int linear
 			if(count<neighbors){
 				//Filling up the hood
 				*(blockDistance+count)=dist;
-				*(blockFutures+count)=input_data[k+1];
-				if(linearStateStim){
-					*(blockCurrent+n)=input_data[k];
-				}
+				*(blockIndex+count)=k;
 				if(maxBlockDistance < dist ){
 					maxBlockDistance=dist;
 					maxInd=count;
@@ -452,10 +443,7 @@ void predictHalf(int windowN, int stepSize,int timeLag, int neighbors,int linear
 				//If point is cool enough, kick the lamest brother out of the hood
 				if(dist<maxBlockDistance){
 					*(blockDistance+maxInd)=dist;
-					*(blockFutures+maxInd)=input_data[k+1];
-					if(linearStateStim){
-						*(blockCurrent+n)=input_data[k];
-					}
+					*(blockIndex+maxInd)=k;
 					maxBlockDistance=dist;
 					//Recalculate the newest lamest bro
 					for(n=0;n<neighbors;n++){
@@ -472,11 +460,16 @@ void predictHalf(int windowN, int stepSize,int timeLag, int neighbors,int linear
 		prediction=0;
 		if(linearStateStim==1){
 			double *m,*b;
-			linearFit(blockCurrent,blockFutures,count,m,b);
-			prediction= (*m) + ( (*b) * input_data[i]);
+			b=calloc(dimSize,sizeof(double));
+			m=calloc(1,sizeof(double));
+			linearFit(blockIndex,dimSize,stepSize,count,m,b);
+			prediction= (*m);
+			for(n=0;n<dimSize;n++)
+				prediction += (*b) * input_data[ i - n*stepSize];
+			free(b);
 		}else{
 			for(n=0;n<count;n++){
-				prediction += (*(blockFutures+n))/count;
+				prediction += input_data[ *(blockIndex+n) +1 ]/count;
 			}
 		}
 		//Output Prediction and true value
@@ -576,19 +569,27 @@ long input()
 	return (npts);
 }
 
-void linearFit(double* x, double* y,int N, double* m, double* b){
-	double Sx=0, Sxx=0, Sy=0, Sxy=0, Syy=0;
-	int i;
-	*m=0;
-	*b=0;
-	for(i=0;i<N;i++){
-		Sx+= (*(x+i));
-		Sy+= (*(y+i));
-		Sxx= (*(x+i)) * (*(x+i));
-		Syy= (*(y+i)) * (*(y+i));
-		Sxy= (*(x+i)) * (*(y+i));
-	}
+void linearFit(int* indeces,int dimSize,int stepSize, int N, double* M, double* b){
+	//Do a ordinary least square regression
+	int i,k;
+	double XX, x;
+	*M=0;
+	//Calculate the mean and subtract it when calculating the covariances
+	for(i=0;i<N;i++)
+		(*M)= (*M) + input_data[ indeces[i] + 1]/((double) N);
 
-	*b= (N*Sxy - Sx*Sy) /(N*Sxx - Sx*Sx);
-	*m= (Sy/((double)N)) - (*b)*Sx/((double) N);
+	//Calculat the coefficient for each variable
+	for(i=0;i<dimSize;i++){
+		XX=0;
+		for(k=0;k<N;k++){
+			x=input_data[ indeces[i] - i*stepSize];
+			XX += x*x;
+			b[i]= x*( input_data[ indeces[i] +1] - (*M) );
+		}
+		if(XX  == 0){
+			b[i]=0;
+		}else{
+			b[i] = b[i]/XX;
+		}
+	}
 }
