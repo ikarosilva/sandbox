@@ -312,7 +312,7 @@ void smooth(int windowN, int stepSize,int timeLag, int neighbors){
 
 	//The iterative approach should be the same as get_err, logging the closest neighboring values and their predictions
 	double* blockDistance=calloc(neighbors,sizeof(double));
-	double* blockFutures=calloc(neighbors,sizeof(double));
+	int* blockIndex=calloc(neighbors,sizeof(int));
 	double maxBlockDistance=-1;;
 	int count=0, maxInd;
 	double prediction;
@@ -329,7 +329,7 @@ void smooth(int windowN, int stepSize,int timeLag, int neighbors){
 		//Reset predictions and neighborhood parameters
 		for(n=0;n<neighbors;n++){
 			*(blockDistance+n)=-1;
-			*(blockFutures+n)=0;
+			*(blockIndex+n)=0;
 		}
 		maxBlockDistance=-1;
 		maxInd=0;
@@ -352,7 +352,7 @@ void smooth(int windowN, int stepSize,int timeLag, int neighbors){
 			if(count<neighbors){
 				//Filling up the hood
 				*(blockDistance+count)=dist;
-				*(blockFutures+count)=input_data[k+1];
+				*(blockIndex+count)=k;
 				if(maxBlockDistance < dist ){
 					maxBlockDistance=dist;
 					maxInd=count;
@@ -362,7 +362,7 @@ void smooth(int windowN, int stepSize,int timeLag, int neighbors){
 				//If point is cool enough, kick the lamest brother out of the hood
 				if(dist<maxBlockDistance){
 					*(blockDistance+maxInd)=dist;
-					*(blockFutures+maxInd)=input_data[k+1];
+					*(blockIndex+maxInd)=k;
 					maxBlockDistance=dist;
 					//Recalculate the newest lamest bro
 					for(n=0;n<neighbors;n++){
@@ -378,7 +378,7 @@ void smooth(int windowN, int stepSize,int timeLag, int neighbors){
 		//End of pass, average predictions of all the hood
 		prediction=0;
 		for(n=0;n<count;n++){
-			prediction += (*(blockFutures+n))/count;
+			prediction += ( input_data[ *(blockIndex+n) + 1 ])/count;
 		}
 		//Output Prediction and true value
 		fprintf(stdout,"%f\t%f\n",prediction,input_data[i+1]);
