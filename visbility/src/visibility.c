@@ -6,15 +6,12 @@
  Copyright   : GPL
  Description : Visibility Graph
  ============================================================================
- */
+gcc -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"src/visibility.d" -MT"src/visibility.d" -o "src/visibility.o" "../src/visibility.c"
+gcc  -o "visibility"  ./src/visibility.o
+*/
 
 
-/*
- * one.c
- *
- *  Created on: Nov 15, 2014
- *      Author: ikaro
- */
+
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -34,17 +31,16 @@ static char *help_strings[] = {
 		"usage: visibility [OPTIONS ...]\n",
 		"where OPTIONS may include:",
 		" -h               print this usage summary",
-		"The standard output is one column.",
 		NULL
 };
 
 static void help()
 {
-	int i;
+	int h;
 
 	fprintf(stderr, help_strings[0]);
-	for (i = 1; help_strings[i] != NULL; i++)
-		fprintf(stderr, "%s\n", help_strings[i]);
+	for (h = 1; help_strings[h] != NULL; h++)
+		fprintf(stderr, "%s\n", help_strings[h]);
 	exit(-1);
 }
 
@@ -75,7 +71,6 @@ int main(int argc,char* argv[]){
 	int* count=malloc(samples*sizeof(int));
 	double* Pk=malloc(samples*sizeof(double));
 
-	fprintf(stderr,"N=%u\n",N);
 	//Calculate the visibility count
 	int isVisible=1;
 	for(a=0;a<N-3;a=a+2){
@@ -120,8 +115,6 @@ int main(int argc,char* argv[]){
 	return 0;
 }
 
-
-
 long input()
 {
 	long maxdat = 0L, npts = 0L;
@@ -131,7 +124,7 @@ long input()
 			double *s;
 			maxdat += 50000;	/* allow the input buffer to grow (the increment is arbitrary) */
 			if ((s = realloc(input_data, maxdat * sizeof(double))) == NULL) {
-				fprintf(stderr,"visibility: insufficient memory, exiting program!");
+				fprintf(stderr,"insufficient memory, exiting program!");
 				exit(-1);
 			}
 			input_data = s;
