@@ -7,8 +7,7 @@
  Description : Analysis of Time Series based on Correlation Integral
  ============================================================================
  To build:
- gcc -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"src/corrint.d" -MT"src/corrint.d" -o "src/corrint.o" "../src/corrint.c"
- gcc  -o "corrint"  ./src/corrint.o   -lm
+ gcc  -o corrint  corrint.c   -lm
  */
 
 #include <stdio.h>
