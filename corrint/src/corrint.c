@@ -69,7 +69,7 @@ int main(int argc,char* argv[]) {
 
 	//Define the parameters of the correlation integral
 	int timeLag=2; //Offset with respect only to the first state
-	int dim=2;
+	int dim=2;  //Embedded dimension. Limits maximum estimated dimension : v < 2*dim+1
 	char ch;
 	int stepSize=1;
 	int normalizeFlag=1, corrFlag=0, recurFlag=0, estimateDim=0, predictSecondHalf=0, smoothFlag=0;
