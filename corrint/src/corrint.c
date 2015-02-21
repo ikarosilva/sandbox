@@ -6,6 +6,8 @@
  Copyright   : GPL
  Description : Analysis of Time Series based on Correlation Integral
  ============================================================================
+ To build:
+ gcc  -o corrint  corrint.c   -lm
  */
 
 #include <stdio.h>
@@ -41,7 +43,7 @@ static char *help_strings[] = {
 		" -d int           embedded dimension size ",
 		" -t int           time lag between states (if -1, estimate timeLag from first zero crossing of autocorrelation)",
 		" -s int           time lag within state samples",
-		" -r double        distance threshold",
+		" -r double        distance threshold (if 0, default is set to variance of series divided by 10)",
 		" -D               Debug Flag, if true prints program detail",
 		" -N               Normalize Flag, if true normalize count",
 		" -v               Estimates correlation dimension and scaling region given an embedded dimension (-d) parameter",
@@ -67,7 +69,7 @@ int main(int argc,char* argv[]) {
 
 	//Define the parameters of the correlation integral
 	int timeLag=2; //Offset with respect only to the first state
-	int dim=2;
+	int dim=2;  //Embedded dimension. Limits maximum estimated dimension : v < 2*dim+1
 	char ch;
 	int stepSize=1;
 	int normalizeFlag=1, corrFlag=0, recurFlag=0, estimateDim=0, predictSecondHalf=0, smoothFlag=0;
@@ -135,17 +137,29 @@ int main(int argc,char* argv[]) {
 			break;
 		}
 
+	//Load data into input_data and get the number of samples read
+	N=input();
+
 	//Calculate window size here in case dim is entered by user
 	windowN=dim*stepSize;
 
 	/* Define single threshold value if passed by user, otherwise use standard array */
 	double* th_arr=TH_ARR;
 	if(TH != -1 ){
+		if(TH != 0 ){
 		*th_arr=TH;
+		}else{
+			//Use variance of the signal to estimate threshold
+			double var=0, mx=0;
+			for(i=0;i<N;i++){
+				mx+= input_data[i];
+				var+= input_data[i] * input_data[i];
+			}
+			mx=mx/((double) N);
+			var= var/((double) N) - mx*mx;
+			*th_arr= var/10.0;
+		}
 	}
-
-	//Load data into input_data and get the number of samples read
-	N=input();
 
 	if(corrFlag){
 		/*Calculate autocorrelation and exit */
