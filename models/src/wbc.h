@@ -9,5 +9,7 @@
 #define WBC_H_
 
 void wbc(int argc,char* argv[]);
+double randn(double mx, double std);
+double randu();
 
 #endif /* WBC_H_ */

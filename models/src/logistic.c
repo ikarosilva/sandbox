@@ -27,11 +27,13 @@ _______________________________________________________________________________
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include "white.h"
 
 static char *help_strings[] = {
 		"usage: logistic [OPTIONS ...]\n",
 		"where OPTIONS may include:",
 		" -N n             number of samples to generate",
+		" -s pow           Gaussian noise power (default =0 )",
 		" -h               print this usage summary",
 		"The standard output is one column.",
 		NULL
@@ -50,9 +52,10 @@ void logistic(int argc,char* argv[]){
 	double x=0.2;
 	double u=4.0;
 	int N=10;
+	double std=0;
 
 	char ch;
-	while ((ch = getopt(argc,argv,"hN:u:x:"))!=EOF)
+	while ((ch = getopt(argc,argv,"hN:u:x:s:"))!=EOF)
 		switch(ch){
 		case 'N':
 			N=atoi(optarg);
@@ -66,6 +69,9 @@ void logistic(int argc,char* argv[]){
 		case 'h':
 			help();
 			break;
+		case 's':
+			std=atof(optarg);
+			break;
 		default:
 			fprintf(stderr,"Unknown option for logistic: '%s'\n",optarg);
 			help();
@@ -75,8 +81,17 @@ void logistic(int argc,char* argv[]){
 	argv += optind;
 
 	int i;
+	double d;
 	for(i=0;i<N;i++){
-		x=u*x*(1-x);
-		printf("%.6f\n",x);;
+		if( std == 0){
+			x=u*x*(1-x);
+		}else{
+			x=randn(0.0,std);
+			fprintf(stderr, "x3=%f\n", x);
+			d=randn(0.0,std);
+			fprintf(stderr, "x4=%f\n", d);
+		}
+		printf("%.6f\n",x);
+
 	}
 }

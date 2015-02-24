@@ -42,6 +42,17 @@ static void help()
 	exit(-1);
 }
 
+double randn(double mx, double std){
+	double y, x;
+	x=(rand()+1.0)/(RAND_MAX+1.0);
+	y= (rand()+1.0)/(RAND_MAX+1.0);
+	x=sqrt(-2*log(y)) * cos(2*PI*x) + mx;
+	return x;
+}
+
+double randu(){
+	return (rand()+1.0)/(RAND_MAX+1.0);
+}
 
 void white(int argc,char* argv[]){
 
@@ -75,6 +86,7 @@ void white(int argc,char* argv[]){
 	for(;n<N;n++){
 		x= (rand()+1.0)/(RAND_MAX+1.0);
 		if(isUniform==0){
+			//Gaussian case
 			y= (rand()+1.0)/(RAND_MAX+1.0);
 			x=sqrt(-2*log(y)) * cos(2*PI*x);
 		}
