@@ -52,6 +52,7 @@ static char *help_strings[] = {
 		" -n int           Number of closest neighbors used for prediction ( with -F option)",
 		" -P               User first half of the time series as a model to predict the second half (point by point)",
 		" -F               Forecast the time series by attempting to predict current point  based on history",
+		" -S               Smooth (filter) based on embedded dimensions",
 		" -A               Use mean and slope (linear state approximation) when doing prediction  "
 		"                  and smoothing options (-P and -F).",
 		NULL
@@ -73,6 +74,7 @@ int main(int argc,char* argv[]) {
 	char ch;
 	int stepSize=1;
 	int normalizeFlag=1, corrFlag=0, recurFlag=0, estimateDim=0, predictSecondHalf=0, forecastFlag=0;
+	int filterFlag=0;
 	int autoEstimateDim=0, linearStateStim=0;
 	int windowN;
 	register int i;
@@ -91,7 +93,7 @@ int main(int argc,char* argv[]) {
 		return 0;
 	}
 
-	while ((ch = getopt(argc,argv,"hvd:t:s:Rpr:Nn:PFaA"))!=EOF )
+	while ((ch = getopt(argc,argv,"hvd:t:s:Rpr:Nn:PFaAS"))!=EOF )
 		switch(ch){
 		case 'v':
 			estimateDim=1;
@@ -126,6 +128,9 @@ int main(int argc,char* argv[]) {
 			break;
 		case 'F':
 			forecastFlag=1;
+			break;
+		case 'S':
+			filterFlag=1;
 			break;
 		case 'a':
 			autoEstimateDim=1;
