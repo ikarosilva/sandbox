@@ -9,5 +9,7 @@
 #define WHITE_H_
 
 void white(int argc,char* argv[]);
+double randn(double mx, double std);
+double randu();
 
 #endif /* WHITE_H_ */

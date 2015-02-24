@@ -47,7 +47,7 @@ double randn(double mx, double std){
 	x=(rand()+1.0)/(RAND_MAX+1.0);
 	y= (rand()+1.0)/(RAND_MAX+1.0);
 	x=sqrt(-2*log(y)) * cos(2*PI*x) + mx;
-	return x;
+	return x*std;
 }
 
 double randu(){

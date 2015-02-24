@@ -33,7 +33,8 @@ static char *help_strings[] = {
 		"usage: logistic [OPTIONS ...]\n",
 		"where OPTIONS may include:",
 		" -N n             number of samples to generate",
-		" -s pow           Gaussian noise power (default =0 )",
+		" -n pow           measurement noise power (default =0 )",
+		" -s pow           state noise power (default =0 )",
 		" -h               print this usage summary",
 		"The standard output is one column.",
 		NULL
@@ -52,10 +53,10 @@ void logistic(int argc,char* argv[]){
 	double x=0.2;
 	double u=4.0;
 	int N=10;
-	double std=0;
+	double n=0, s=0;
 
 	char ch;
-	while ((ch = getopt(argc,argv,"hN:u:x:s:"))!=EOF)
+	while ((ch = getopt(argc,argv,"hN:u:x:n:s:"))!=EOF)
 		switch(ch){
 		case 'N':
 			N=atoi(optarg);
@@ -69,8 +70,11 @@ void logistic(int argc,char* argv[]){
 		case 'h':
 			help();
 			break;
+		case 'n':
+			n=atof(optarg);
+			break;
 		case 's':
-			std=atof(optarg);
+			s=atof(optarg);
 			break;
 		default:
 			fprintf(stderr,"Unknown option for logistic: '%s'\n",optarg);
@@ -81,17 +85,17 @@ void logistic(int argc,char* argv[]){
 	argv += optind;
 
 	int i;
-	double d;
+	double msr=0;
 	for(i=0;i<N;i++){
-		if( std == 0){
+		if(n !=0 ){
+			msr=randn(0.0,n);
+		}
+		if( s == 0){
 			x=u*x*(1-x);
 		}else{
-			x=randn(0.0,std);
-			fprintf(stderr, "x3=%f\n", x);
-			d=randn(0.0,std);
-			fprintf(stderr, "x4=%f\n", d);
+			x= x + randn(0.0,s);
 		}
-		printf("%.6f\n",x);
+		printf("%.6f\n",x+msr);
 
 	}
 }

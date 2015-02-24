@@ -20,7 +20,7 @@ long input(void);
 void get_err(int windowN, int stepSize,int timeLag, double* err, int nFlag, double th);
 void countNeighbors(double *th,double *count, int countN, int Nerr, double* err, int nFlag);
 void predictHalf(int windowN, int stepSize,int timeLag, int neighbors, int linearStateStim, int dimSize);
-void smooth(int windowN, int stepSize,int timeLag, int neighbors);
+void forecast(int windowN, int stepSize,int timeLag, int neighbors);
 void xcorr();
 void linearFit(int* blockIndex,int dimSize,int stepSize, int neighboors, double* m,double* b);
 /* End of Function prototypes. */
@@ -38,8 +38,8 @@ static char *help_strings[] = {
 		"usage: corrint [OPTIONS ...]\n",
 		"where OPTIONS may include:",
 		" -h               print this usage summary",
-		" -R               calculates autocorrelation only and exit",
-		" -p               generate recurrence data only and exit",
+		" -R               calculates autocorrelation only and exits",
+		" -p               generate recurrence data only and exits",
 		" -d int           embedded dimension size ",
 		" -t int           time lag between states (if -1, estimate timeLag from first zero crossing of autocorrelation)",
 		" -s int           time lag within state samples",
@@ -49,11 +49,11 @@ static char *help_strings[] = {
 		" -v               Estimates correlation dimension and scaling region given an embedded dimension (-d) parameter",
 		" -a               Use this option along with the '-v' option to estimate correlation dimension based on only 2 threshold"
 		"                  values determined from the data series\n"
-		" -n int           Number of closest neighbors used for prediction ",
+		" -n int           Number of closest neighbors used for prediction ( with -F option)",
 		" -P               User first half of the time series as a model to predict the second half (point by point)",
-		" -S               Filter the time series by attempting to predict current point  based on the other points",
-		" -A               Use mean and slope (linear state approximation) when doing prediction and smoothing (optinos "
-		"                  -P and -S.",
+		" -F               Forecast the time series by attempting to predict current point  based on history",
+		" -A               Use mean and slope (linear state approximation) when doing prediction  "
+		"                  and smoothing options (-P and -F).",
 		NULL
 };
 
@@ -72,7 +72,7 @@ int main(int argc,char* argv[]) {
 	int dim=2;  //Embedded dimension. Limits maximum estimated dimension : v < 2*dim+1
 	char ch;
 	int stepSize=1;
-	int normalizeFlag=1, corrFlag=0, recurFlag=0, estimateDim=0, predictSecondHalf=0, smoothFlag=0;
+	int normalizeFlag=1, corrFlag=0, recurFlag=0, estimateDim=0, predictSecondHalf=0, forecastFlag=0;
 	int autoEstimateDim=0, linearStateStim=0;
 	int windowN;
 	register int i;
@@ -86,7 +86,12 @@ int main(int argc,char* argv[]) {
 	for(i=0;i<countN;i++)
 		count[i]=0;
 
-	while ((ch = getopt(argc,argv,"hvd:t:s:Rpr:Nn:PSaA"))!=EOF )
+	if(argc == 1){
+		help();
+		return 0;
+	}
+
+	while ((ch = getopt(argc,argv,"hvd:t:s:Rpr:Nn:PFaA"))!=EOF )
 		switch(ch){
 		case 'v':
 			estimateDim=1;
@@ -119,8 +124,8 @@ int main(int argc,char* argv[]) {
 		case 'P':
 			predictSecondHalf=1;
 			break;
-		case 'S':
-			smoothFlag=1;
+		case 'F':
+			forecastFlag=1;
 			break;
 		case 'a':
 			autoEstimateDim=1;
@@ -186,7 +191,7 @@ int main(int argc,char* argv[]) {
 		//This is a conservative minimum (sufficient but not necessary).
 		double minPoints= pow(10.0,dim);
 		if(N< minPoints)
-			fprintf(stderr,"Possibly not have enough points to estimate dimension. Total points: %u, sufficient minimum required: %u\n",N,(long) minPoints);
+			fprintf(stderr,"Possibly not have enough points to estimate dimension. Total points: %lu, sufficient minimum required: %f\n",N, minPoints);
 
 		//Overwrite other parameters accordingly
 		normalizeFlag=1;
@@ -220,8 +225,8 @@ int main(int argc,char* argv[]) {
 	}
 
 	//If in smooth mode, smooth based or error matrix and exit from here
-	if(smoothFlag){
-		smooth(windowN,stepSize,timeLag,neighbors);
+	if(forecastFlag){
+		forecast(windowN,stepSize,timeLag,neighbors);
 		exit(0);
 	}
 
@@ -235,7 +240,7 @@ int main(int argc,char* argv[]) {
 		}
 	}
 
-	//For the dimension estimation case, we also print out the estimate slope value
+	//For the dimension estimation case, we also print out the estimated slope value
 	double slope=0, slope2=0;
 	if(estimateDim){
 		if(autoEstimateDim != 1){
@@ -320,7 +325,7 @@ void get_err(int windowN, int stepSize,int timeLag, double* err, int recurFlag, 
 	}
 }
 
-void smooth(int windowN, int stepSize,int timeLag, int neighbors){
+void forecast(int windowN, int stepSize,int timeLag, int neighbors){
 	int i, k, z, n;
 	double dist;
 
@@ -577,7 +582,7 @@ long input()
 		npts++;
 	}
 	if (npts < 1){
-		printf(stderr,"Error, no data read!");
+		fprintf(stderr,"Error, no data read!");
 		exit(-1);
 	}
 	return (npts);
@@ -592,7 +597,7 @@ void linearFit(int* indeces,int dimSize,int stepSize, int N, double* M, double* 
 	for(i=0;i<N;i++)
 		(*M)= (*M) + input_data[ indeces[i] + 1]/((double) N);
 
-	//Calculat the coefficient for each variable
+	//Calculate the coefficient for each variable
 	for(i=0;i<dimSize;i++){
 		XX=0;
 		for(k=0;k<N;k++){
