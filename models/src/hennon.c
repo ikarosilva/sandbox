@@ -104,7 +104,7 @@ void hennon(int argc,char* argv[]){
 		x=a - xold*xold + b*yold;
 		y=xold;
 
-		printf("%.6f\n",x);
+		printf("%.6f\n",x+msr);
 
 	}
 }
