@@ -26,6 +26,7 @@ _______________________________________________________________________________
 #include "logistic.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 #include <unistd.h>
 #include "white.h"
 
@@ -35,6 +36,9 @@ static char *help_strings[] = {
 		" -N n             number of samples to generate",
 		" -n pow           measurement noise power (default =0 )",
 		" -s pow           state noise power (default =0 )",
+		" -u mu            logistic parameter (default= 4 )",
+		" -x x0			   initial condition (default 0.2)",
+		" -U			   Generates  an Ulam map",
 		" -h               print this usage summary",
 		"The standard output is one column.",
 		NULL
@@ -54,18 +58,19 @@ void logistic(int argc,char* argv[]){
 	double u=4.0;
 	int N=10;
 	double n=0, s=0;
+	int ulamFlag=0;
 
 	char ch;
-	while ((ch = getopt(argc,argv,"hN:u:x:n:s:"))!=EOF)
+	while ((ch = getopt(argc,argv,"hN:u:x:n:s:U"))!=EOF)
 		switch(ch){
 		case 'N':
 			N=atoi(optarg);
 			break;
 		case 'u':
-			u=atoi(optarg);
+			u=atof(optarg);
 			break;
 		case 'x':
-			x=atoi(optarg);
+			x=atof(optarg);
 			break;
 		case 'h':
 			help();
@@ -76,11 +81,13 @@ void logistic(int argc,char* argv[]){
 		case 's':
 			s=atof(optarg);
 			break;
+		case 'U':
+			ulamFlag=1;
+			break;
 		default:
 			fprintf(stderr,"Unknown option for logistic: '%s'\n",optarg);
 			help();
 		}
-
 	argc-= optind;
 	argv += optind;
 
@@ -90,12 +97,23 @@ void logistic(int argc,char* argv[]){
 		if(n !=0 ){
 			msr=randn(0.0,n);
 		}
-		if( s == 0){
+
+		if(ulamFlag !=1){
 			x=u*x*(1-x);
 		}else{
+			//Ulam map case
+			x=1-2.0*x*x;
+		}
+
+		if( s != 0){
+			//Add state noise
 			x= x + randn(0.0,s);
 		}
-		printf("%.6f\n",x+msr);
+		if(ulamFlag !=1){
+			printf("%.6f\n",x+msr);
+		}else{
+			printf("%.6f\n",acos(-x+msr)/3.14159265358979323846);
+		}
 
 	}
 }
