@@ -23,7 +23,7 @@ void backward(int argc,char* argv[]){
 			NULL
 	};
 
-	int p=1, Ts;
+	int p=1, Ts=1;
 	char ch;
 	double *input_data;	/* input data buffer; allocated and filled by input() */
 	long N=0;
@@ -54,7 +54,6 @@ void backward(int argc,char* argv[]){
 	 *
 	 *	With error of order O(Ts)^2
 	 *  */
-
 	int n, dx, xdiff;
 	if(p==1){
 		xdiff=1/(2*Ts);

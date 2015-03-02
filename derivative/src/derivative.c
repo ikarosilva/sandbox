@@ -32,7 +32,7 @@ long input(double *input_data){
 			double *s;
 			maxdat += 50000;	/* allow the input buffer to grow (the increment is arbitrary) */
 			if ((s = realloc(input_data, maxdat * sizeof(double))) == NULL) {
-				fprintf(stderr,"central: insufficient memory, exiting program!");
+				fprintf(stderr,"insufficient memory, exiting program!");
 				exit(-1);
 			}
 			input_data = s;
@@ -41,7 +41,7 @@ long input(double *input_data){
 		npts++;
 	}
 	if (npts < 1){
-		fprintf(stderr,"central: Error, no data read!");
+		fprintf(stderr,"Error, no data read!");
 		exit(-1);
 	}
 	return (npts);
@@ -55,7 +55,7 @@ int main(int argc,char* argv[]) {
 			"where OPTIONS may include:",
 			" -f int           Number of model to run. Options are:",
 			"                  0 - Central difference derivative",
-			"                  0 - Backward difference derivative",
+			"                  1 - Backward difference derivative",
 			" -h               print this usage summary",
 			"The standard output is one column.",
 			NULL
