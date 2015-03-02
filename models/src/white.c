@@ -25,8 +25,8 @@ static char *help_strings[] = {
 		"usage: one [OPTIONS ...]\n",
 		"where OPTIONS may include:",
 		" -N n             number of samples to generate",
-		" -t               output time as first column",
 		" -u               return uniform RV instead of a Gaussian RV",
+		" -b               return Brownian Motion (random walk) series",
 		" -h               print this usage summary",
 		"The standard output is one column.",
 		NULL
@@ -58,9 +58,8 @@ void white(int argc,char* argv[]){
 
 	int N=80;
 	char ch;
-	int showTime=0;
-	int isUniform=0;
-	while ((ch = getopt(argc,argv,"hN:tu"))!=EOF)
+	int isUniform=0, isBrown=0;
+	while ((ch = getopt(argc,argv,"hN:tub"))!=EOF)
 		switch(ch){
 		case 'N':
 			N=atoi(optarg);
@@ -68,8 +67,8 @@ void white(int argc,char* argv[]){
 		case 'u':
 			isUniform=1;
 			break;
-		case 't':
-			showTime=1;
+		case 'b':
+			isBrown=1;
 			break;
 		case 'h':
 			help();
@@ -82,16 +81,18 @@ void white(int argc,char* argv[]){
 	argc-= optind;
 	argv += optind;
 	int n=0;
-	double x,y;
+	double x,y,brown=0;
 	for(;n<N;n++){
 		x= (rand()+1.0)/(RAND_MAX+1.0);
 		if(isUniform==0){
 			//Gaussian case
 			y= (rand()+1.0)/(RAND_MAX+1.0);
 			x=sqrt(-2*log(y)) * cos(2*PI*x);
+			brown+=x;
 		}
-		if(showTime){
-			printf("%u %.6f\n",n,x);
+
+		if(isBrown){
+			printf("%.6f\n",brown);
 		}else{
 			printf("%.6f\n",x);
 		}
